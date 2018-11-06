@@ -951,7 +951,7 @@ RC PF_BufferMgr::AllocateBlock(char *&buffer)
       return rc;
 
    // Create artificial page number (just needs to be unique for hash table)
-   PageNum pageNum = *(PageNum *)bufTable[slot].pData;
+   PageNum pageNum = PageNum(bufTable[slot].pData);
 
    // Insert the page into the hash table, and initialize the page description entry
    if ((rc = hashTable.Insert(MEMORY_FD, pageNum, slot) != OK_RC) ||
@@ -976,5 +976,5 @@ RC PF_BufferMgr::AllocateBlock(char *&buffer)
 //
 RC PF_BufferMgr::DisposeBlock(char* buffer)
 {
-   return UnpinPage(MEMORY_FD, *(PageNum *)buffer);
+   return UnpinPage(MEMORY_FD, PageNum(buffer));
 }

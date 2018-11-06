@@ -8,7 +8,7 @@
 #
 # Global variables
 #
-CC             = g++
+CC             = g++-4.9
 BUILD_DIR      = ../build/
 LIB_DIR        = ../lib/
 INC_DIRS       = -I.

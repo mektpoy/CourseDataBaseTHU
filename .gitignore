@@ -3,3 +3,16 @@ lib
 src/pf_test1
 src/pf_test2
 src/pf_test3
+src/file1
+
+src/pf_test1\.dSYM/Contents/Info\.plist
+
+src/pf_test1\.dSYM/Contents/Resources/DWARF/pf_test1
+
+src/pf_test2\.dSYM/Contents/Info\.plist
+
+src/pf_test2\.dSYM/Contents/Resources/DWARF/pf_test2
+
+src/pf_test3\.dSYM/Contents/Info\.plist
+
+src/pf_test3\.dSYM/Contents/Resources/DWARF/pf_test3
