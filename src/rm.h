@@ -82,6 +82,7 @@ public:
 // RM_Manager: provides RM file management
 //
 class RM_Manager {
+    PF_Manager *pfm;
 public:
     RM_Manager    (PF_Manager &pfm);
     ~RM_Manager   ();
@@ -98,4 +99,10 @@ public:
 //
 void RM_PrintError(RC rc);
 
+// #define RM_PAGEPINNED      (START_PF_WARN + 0) // page pinned in buffer
+#define RM_LASTWARN        RM_TOOSMALL
+
+#define RM_RECORDSIZEERR   (START_PF_ERR - 0)  // record size too large
+
 #endif
+
