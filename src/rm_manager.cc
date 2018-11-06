@@ -10,7 +10,6 @@ RM_Manager::RM_Manager(PF_Manager &pfm) {
 }
 
 RM_Manager::~RM_Manager() {
-	delete pfm;
 }
 
 RC RM_Manager::CreateFile(const char *fileName, int recordSize) {
