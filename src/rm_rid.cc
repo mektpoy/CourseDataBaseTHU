@@ -2,8 +2,8 @@
 
 RID::RID()
 {
-	page = 0;
-    slot = 0;
+	page = -1;
+    slot = -1;
 }
 
 RID::RID(PageNum pageNum, SlotNum slotNum){
