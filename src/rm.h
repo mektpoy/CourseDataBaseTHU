@@ -21,6 +21,7 @@
 #include "redbase.h"
 #include "rm_rid.h"
 #include "pf.h"
+#include "rm_error.h"
 
 //
 // RM_Record: RM Record interface
@@ -36,6 +37,10 @@ public:
 
     // Return the RID associated with the record
     RC GetRid (RID &rid) const;
+private:
+    int size;
+    char * data;
+    RID rid;
 };
 
 //
