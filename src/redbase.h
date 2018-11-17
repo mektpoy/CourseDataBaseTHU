@@ -98,8 +98,8 @@ typedef char Boolean;
 
 #define TRY(_x) \
 	if (int __rc = (_x)) { \
-		cout << "non-zero return code : " << __rc << endl; \
-		return __rc;
+		std::cout << "non-zero return code : " << __rc << std::endl; \
+		return __rc; \
 	}
 
 #endif
