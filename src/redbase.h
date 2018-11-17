@@ -96,4 +96,10 @@ typedef char Boolean;
 #define NULL 0
 #endif
 
+#define TRY(_x) \
+	if (int __rc = (_x)) { \
+		cout << "non-zero return code : " << __rc << endl; \
+		return __rc;
+	}
+
 #endif

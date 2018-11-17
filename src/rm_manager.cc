@@ -16,15 +16,18 @@ RC RM_Manager::CreateFile(const char *fileName, int recordSize) {
     if (recordSize > PF_PAGE_SIZE) {
         return RM_RECORDSIZEERR;
     }
-    pfm->CreateFile(fileName);
+    TRY(pfm->CreateFile(fileName));
 
     PF_FileHandle fileHandle;
     PF_PageHandle pageHandle;
     RM_FileHeader *fileHeader;
     RM_PageHeader *pageHeader;
 
-    pfm->OpenFile(fileName, fileHandle);
-    fileHandle.AllocatePage(pageHandle);
+    char *pageData;
+
+    TRY(pfm->OpenFile(fileName, fileHandle));
+    TRY(fileHandle.AllocatePage(pageHandle));
+    TRY(pageHandle.GetData(pageData));
 
     return 0;
 }
