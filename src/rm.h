@@ -22,6 +22,20 @@
 #include "rm_rid.h"
 #include "pf.h"
 
+
+struct RM_FileHeader {
+    int firstFreePage;
+    int recordSize;
+    int recordNumPerPage;
+    int pageHeaderSize;
+};
+
+struct RM_PageHeader {
+    int nextPage;
+    int numRecord;
+    unsigned char bitmask[1];
+};
+
 //
 // RM_Record: RM Record interface
 //
@@ -43,8 +57,6 @@ public:
 //
 class RM_FileHandle {
     friend class RM_Manager;
-private:
-    PF_FileHandle pf_FileHandle;
 public:
     RM_FileHandle ();
     ~RM_FileHandle();
@@ -60,6 +72,15 @@ public:
     // Forces a page (along with any contents stored in this class)
     // from the buffer pool to disk.  Default value forces all pages.
     RC ForcePages (PageNum pageNum = ALL_PAGES);
+    
+private:
+    RC IsValid() const;
+
+private:
+    RM_FileHeader rm_FileHeader;
+    PF_FileHandle *pf_FileHandle;
+    bool bFileOpen;
+    bool bHeaderDirty;
 };
 
 //
@@ -85,8 +106,6 @@ public:
 // RM_Manager: provides RM file management
 //
 class RM_Manager {
-private:
-    PF_Manager *pfm;
 public:
     RM_Manager    (PF_Manager &pfm);
     ~RM_Manager   ();
@@ -96,6 +115,9 @@ public:
     RC OpenFile   (const char *fileName, RM_FileHandle &fileHandle);
 
     RC CloseFile  (RM_FileHandle &fileHandle);
+
+private:
+    PF_Manager *pfm;
 };
 
 //
@@ -103,10 +125,11 @@ public:
 //
 void RM_PrintError(RC rc);
 
-// #define RM_PAGEPINNED      (START_PF_WARN + 0) // page pinned in buffer
-#define RM_LASTWARN        RM_TOOSMALL
+#define RM_WAR_NOSUCHRECORD (START_RM_WARN + 0) // page pinned in buffer
 
-#define RM_RECORDSIZEERR   (START_PF_ERR - 0)  // record size too large
+#define RM_ERR_RECORDSIZE   (START_RM_ERR - 0)  // record size too large
+#define RM_ERR_SLOTNUM      (START_RM_ERR - 1)  // slot num is not valid
+#define RM_ERR_FILENOTOPEN  (START_RM_ERR - 2)  // file is not opened
 
 #endif
 

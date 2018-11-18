@@ -15,23 +15,17 @@
 // Constants and defines
 //
 
+inline bool GetBit(unsigned char *bitmask, int pos) {
+	return bitmask[pos >> 3] >> (pos & 0x7) & 1;
+}
+
+inline void SetBit(unsigned char *bitmask, int pos, bool value) {
+	int c = bitmask[pos >> 3] >> (pos & 0x7) & 1;
+	bitmask[pos >> 3] += -(c << (pos & 0x7)) + (value << (pos & 0x7));
+}
+
 #define CREATION_MASK      0600    // r/w privileges to owner only
 #define RM_PAGE_LIST_END  -1       // end of list of free pages
 #define RM_PAGE_USED      -2       // page is being used
-
-struct RM_FileHeader {
-    int firstFreePage;
-    //int numPage;
-    int recordSize;
-    int recordNumPerPage;
-    int pageHeaderSize;
-};
-
-struct RM_PageHeader {
-	int nextPage;
-	int numRecord;
-	unsigned char bitmask[1];
-};
-
 
 #endif
