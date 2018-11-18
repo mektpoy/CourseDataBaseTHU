@@ -9,7 +9,6 @@
 
 #include <cstdlib>
 #include <cstring>
-#include "rm.h"
 
 //
 // Constants and defines

@@ -99,7 +99,7 @@ typedef char Boolean;
 #define TRY(_x) \
 	if (int __rc = (_x)) { \
 		std::cout << "non-zero return code : " << __rc << std::endl; \
-		return __rc; \
+		if (__rc < 0) return __rc; \
 	}
 
 #endif

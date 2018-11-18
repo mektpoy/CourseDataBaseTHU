@@ -19,10 +19,9 @@
 
 // Do not change the following includes
 #include "redbase.h"
-#include "rm_rid.h"
+#include "rid.h"
 #include "pf.h"
 #include "rm_error.h"
-
 
 struct RM_FileHeader {
     int firstFreePage;
@@ -41,6 +40,7 @@ struct RM_PageHeader {
 // RM_Record: RM Record interface
 //
 class RM_Record {
+    friend class RM_FileHandle;
 public:
     RM_Record ();
     ~RM_Record();
@@ -140,6 +140,7 @@ void RM_PrintError(RC rc);
 #define RM_ERR_RECORDSIZE   (START_RM_ERR - 0)  // record size too large
 #define RM_ERR_SLOTNUM      (START_RM_ERR - 1)  // slot num is not valid
 #define RM_ERR_FILENOTOPEN  (START_RM_ERR - 2)  // file is not opened
+#define RM_ERR_NULLRECORDDATA (START_RM_ERR - 3) // record data can not be null
 
 #endif
 
