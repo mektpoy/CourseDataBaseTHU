@@ -1,14 +1,19 @@
-#include "rm_rid.h"
+#include "rid.h"
 #include "rm.h"
+#include "rm_error.h"
 #include <iostream>
+
+#define INIT_REC_SIZE  -1
+#define INIT_REC_PAGE  -1 
+#define INIT_REC_SLOT  -1
 
 using namespace std;
 
 RM_Record::RM_Record()
 {
-    size = -1;
+    size = INIT_REC_SIZE;
     data = NULL;
-    rid = RID(-1,-1);
+    rid = RID(INIT_REC_PAGE,INIT_REC_SLOT);
 }
 
 RM_Record::~RM_Record()
@@ -25,7 +30,7 @@ RC RM_Record::GetData(char *&pData) const{
 		return 0;
 	}
 	else 
-		return -1; // todo:需要定义一个record为空的错误编号
+		return RM_NULLRECORD; // todo:需要定义一个record为空的错误编号
 }
 
 RC RM_Record::GetRid (RID &rid) const 
@@ -36,7 +41,7 @@ RC RM_Record::GetRid (RID &rid) const
         return 0;
     }
 	else 
-		return -1;
+		return RM_NULLRECORD;
 }
 
 
