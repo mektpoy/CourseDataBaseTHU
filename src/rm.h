@@ -83,7 +83,12 @@ public:
                   void       *value,
                   ClientHint pinHint = NO_HINT); // Initialize a file scan
     RC GetNextRec(RM_Record &rec);               // Get next matching record
-    RC CloseScan ();                             // Close the scan
+    RC CloseScan ();                            // Close the scan
+ private:
+    RM_FileHandle * prmh;
+    RID current;
+    bool bOpen;
+
 };
 
 //
