@@ -21,6 +21,7 @@
 #include "redbase.h"
 #include "rm_rid.h"
 #include "pf.h"
+#include "rm_error.h"
 
 
 struct RM_FileHeader {
@@ -50,6 +51,10 @@ public:
 
     // Return the RID associated with the record
     RC GetRid (RID &rid) const;
+private:
+    int size;
+    char * data;
+    RID rid;
 };
 
 //
@@ -99,7 +104,12 @@ public:
                   void       *value,
                   ClientHint pinHint = NO_HINT); // Initialize a file scan
     RC GetNextRec(RM_Record &rec);               // Get next matching record
-    RC CloseScan ();                             // Close the scan
+    RC CloseScan ();                            // Close the scan
+ private:
+    RM_FileHandle * prmh;
+    RID current;
+    bool bOpen;
+
 };
 
 //
