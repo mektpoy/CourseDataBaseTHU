@@ -30,7 +30,7 @@ using namespace std;
 //
 // Defines
 //
-#define FILENAME   "testrel"         // test file name
+char FILENAME[] = "testrel";         // test file name
 #define STRLEN      29               // length of string in testrec
 #define PROG_UNIT   50               // how frequently to give progress
                                       //   reports when adding lots of recs
