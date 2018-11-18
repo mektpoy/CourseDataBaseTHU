@@ -83,6 +83,7 @@ public:
 //
 class RM_Manager {
     PF_Manager *pfm;
+    PF_FileHandle *pf_FileHandle;
 public:
     RM_Manager    (PF_Manager &pfm);
     ~RM_Manager   ();
