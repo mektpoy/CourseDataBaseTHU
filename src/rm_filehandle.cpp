@@ -21,11 +21,11 @@ RC RM_FileHandle::GetRec (const RID &rid, RM_Record &rec) const {
 	TRY(rid.GetSlotNum(slotNum));
 	if (slotNum < 0 || slotNum >= this->rm_FileHeader.recordNumPerPage) return RM_ERR_SLOTNUM;
 
-	PF_PageHandle pf_PageHandle;
-	TRY(this->pf_FileHandle->GetThisPage(pageNum, pf_PageHandle));
+	PF_PageHandle pageHandle;
+	TRY(this->pf_FileHandle->GetThisPage(pageNum, pageHandle));
 
 	char *pData;
-	TRY(pf_PageHandle.GetData(pData));
+	TRY(pageHandle.GetData(pData));
 
 	unsigned int offset = this->rm_FileHeader.pageHeaderSize + this->rm_FileHeader.recordSize * slotNum;
 	rec.size = this->rm_FileHeader.recordSize;
@@ -40,8 +40,18 @@ RC RM_FileHandle::InsertRec (const char *pData, RID &rid) {
 		return RM_ERR_NULLRECORDDATA;
 	}
 
-	PF_PageHandle pf_PageHandle;
-	// TRY(this->pf_FileHandle->GetThisPage(pageNum, pf_PageHandle));
+	PF_PageHandle pageHandle;
+
+	if (this->rm_FileHeader.firstFreePage == RM_PAGE_LIST_END) {
+
+	} else {
+		TRY(this->pf_FileHandle->GetThisPage(this->rm_FileHeader.firstFreePage, pageHandle));
+		char *pageData;
+		TRY(pageHandle.GetData(pageData));
+		RM_PageHeader *rm_PageHeader = (RM_PageHeader *)pageData;
+		
+	}
+
 
 	// char *pageData;
 	// TRY(pf_PageHandle.GetData(pageData));
@@ -75,11 +85,11 @@ RC RM_FileHandle::DeleteRec (const RID &rid) {
 	TRY(rid.GetSlotNum(slotNum));
 	if (slotNum < 0 || slotNum >= this->rm_FileHeader.recordNumPerPage) return RM_ERR_SLOTNUM;
 
-	PF_PageHandle pf_PageHandle;
-	TRY(this->pf_FileHandle->GetThisPage(pageNum, pf_PageHandle));
+	PF_PageHandle pageHandle;
+	TRY(this->pf_FileHandle->GetThisPage(pageNum, pageHandle));
 
 	char *pageData;
-	TRY(pf_PageHandle.GetData(pageData));
+	TRY(pageHandle.GetData(pageData));
 
 	RM_PageHeader *rm_PageHeader = (RM_PageHeader *)pageData;
 
