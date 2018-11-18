@@ -42,6 +42,9 @@ public:
 // RM_FileHandle: RM File interface
 //
 class RM_FileHandle {
+    friend class RM_Manager;
+private:
+    PF_FileHandle pf_FileHandle;
 public:
     RM_FileHandle ();
     ~RM_FileHandle();
@@ -82,8 +85,8 @@ public:
 // RM_Manager: provides RM file management
 //
 class RM_Manager {
+private:
     PF_Manager *pfm;
-    PF_FileHandle *pf_FileHandle;
 public:
     RM_Manager    (PF_Manager &pfm);
     ~RM_Manager   ();

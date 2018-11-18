@@ -54,7 +54,7 @@ RC RM_Manager::DestroyFile(const char *fileName) {
 
 RC RM_Manager::OpenFile(const char *fileName, RM_FileHandle &fileHandle) {
 
-    //TRY(pfm->OpenFile(fileName, fileHandle));
+    TRY(pfm->OpenFile(fileName, fileHandle.pf_FileHandle));
 
     return 0;
 }
