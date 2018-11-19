@@ -32,6 +32,7 @@ struct RM_FileHeader {
 
 struct RM_PageHeader {
     int nextPage;
+    int firstFreeSlot;
     int numRecord;
     unsigned char bitmask[1];
 };

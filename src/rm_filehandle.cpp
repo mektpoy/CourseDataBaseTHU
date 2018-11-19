@@ -41,15 +41,33 @@ RC RM_FileHandle::InsertRec (const char *pData, RID &rid) {
 	}
 
 	PF_PageHandle pageHandle;
+	PageNum pageNum;
+	SlotNum slotNum;
 
 	if (this->rm_FileHeader.firstFreePage == RM_PAGE_LIST_END) {
-
-	} else {
-		TRY(this->pf_FileHandle->GetThisPage(this->rm_FileHeader.firstFreePage, pageHandle));
+		TRY(this->pf_FileHandle->AllocatePage(pageHandle));
+		TRY(pageHandle.GetPageNum(pageNum));
 		char *pageData;
 		TRY(pageHandle.GetData(pageData));
 		RM_PageHeader *rm_PageHeader = (RM_PageHeader *)pageData;
-		
+		memset(rm_PageHeader, 0, (size_t)this->rm_FileHeader.pageHeaderSize);
+		rm_PageHeader->firstFreeSlot = 0;
+		rm_PageHeader->nextPage = RM_PAGE_USED;
+		rm_PageHeader->numRecord = 0;
+		this->bHeaderDirty = true;
+		// todo
+		// for
+	} else {
+		TRY(this->pf_FileHandle->GetThisPage(this->rm_FileHeader.firstFreePage, pageHandle));
+		TRY(pageHandle.GetPageNum(pageNum));
+		char *pageData;
+		TRY(pageHandle.GetData(pageData));
+		RM_PageHeader *rm_PageHeader = (RM_PageHeader *)pageData;
+		int &tot = rm_PageHeader->numRecord;
+		assert (tot < this->rm_FileHeader.recordNumPerPage);
+		slotNum = rm_PageHeader->firstFreeSlot;
+		char *dest = pageData + this->rm_FileHeader.pageHeaderSize + slotNum;
+		rm_PageHeader->firstFreeSlot = *(short *) dest;
 	}
 
 
