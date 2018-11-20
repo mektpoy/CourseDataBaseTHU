@@ -128,11 +128,11 @@ RC RM_FileHandle::UpdateRec (const RM_Record &rec) {
 	if (rec.size != this->rm_FileHeader.recordSize) {
 		return RM_ERR_RECSIZE;
 	}
+	TRY(rec.rid.GetPageNum(pageNum));
+	TRY(rec.rid.GetSlotNum(slotNum));
 	if (slotNum < 0 || slotNum >= this->rm_FileHeader.recordNumPerPage) {
 		return RM_ERR_SLOTNUM;
 	}
-	TRY(rec.rid.GetPageNum(pageNum));
-	TRY(rec.rid.GetSlotNum(slotNum));
 
 	PF_PageHandle pageHandle;
 	TRY(this->pf_FileHandle->GetThisPage(pageNum, pageHandle));

@@ -5,10 +5,6 @@ using namespace std;
 
 RM_FileScan::RM_FileScan()
 {
-	pred = NULL;
-	prmh = NULL;
-	current = RID(1,-1);
-	bopen = False;
 }
 
 RM_FileScan::~RM_FileScan()
@@ -23,14 +19,14 @@ RC RM_FileScan::OpenScan  (const 	RM_FileHandle &fileHandle,
 									void       *value,
 									ClientHint pinHint) // Initialize a file scan
 {
-
+	return 0;
 }
 RC RM_FileScan::GetNextRec(RM_Record &rec)               // Get next matching record
 {
-
+	return 0;
 }
 
 RC RM_FileScan::CloseScan ()                             // Close the scan
 {
-
+	return 0;
 }
