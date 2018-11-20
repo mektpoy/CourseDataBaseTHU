@@ -55,42 +55,32 @@ RC RM_FileHandle::InsertRec (const char *pData, RID &rid) {
 		rm_PageHeader->nextPage = RM_PAGE_USED;
 		rm_PageHeader->numRecord = 0;
 		this->bHeaderDirty = true;
-		// todo
-		// for
-	} else {
-		TRY(this->pf_FileHandle->GetThisPage(this->rm_FileHeader.firstFreePage, pageHandle));
-		TRY(pageHandle.GetPageNum(pageNum));
-		char *pageData;
-		TRY(pageHandle.GetData(pageData));
-		RM_PageHeader *rm_PageHeader = (RM_PageHeader *)pageData;
-		int &tot = rm_PageHeader->numRecord;
-		assert (tot < this->rm_FileHeader.recordNumPerPage);
-		slotNum = rm_PageHeader->firstFreeSlot;
-		char *dest = pageData + this->rm_FileHeader.pageHeaderSize + slotNum;
-		rm_PageHeader->firstFreeSlot = *(short *) dest;
+		this->rm_FileHeader.firstFreePage = pageNum;
+		short *p = (short *)(pageData + this->rm_FileHeader.pageHeaderSize);
+		for (short i = 0; i < this->rm_FileHeader.recordNumPerPage; i ++) {
+			*p = i;
+			p += this->rm_FileHeader.recordSize;
+		}
+		// TRY(this->pf_FileHandle->UnpinPage(pageNum));
 	}
 
+	TRY(this->pf_FileHandle->GetThisPage(this->rm_FileHeader.firstFreePage, pageHandle));
+	TRY(pageHandle.GetPageNum(pageNum));
+	char *pageData;
+	TRY(pageHandle.GetData(pageData));
+	RM_PageHeader *rm_PageHeader = (RM_PageHeader *)pageData;
+	int &tot = rm_PageHeader->numRecord;
+	assert (tot < this->rm_FileHeader.recordNumPerPage);
+	slotNum = rm_PageHeader->firstFreeSlot;
+	char *dest = pageData + this->rm_FileHeader.pageHeaderSize + slotNum * this->rm_FileHeader.recordSize;
+	rm_PageHeader->firstFreeSlot = *(short *) dest;
+	tot ++;
 
-	// char *pageData;
-	// TRY(pf_PageHandle.GetData(pageData));
-
-	// RM_PageHeader *rm_PageHeader = (RM_PageHeader *)pageData;
-
-	// if (GetBit((unsigned char *)(pageData + sizeof(RM_PageHeader) - 1), slotNum) == 0) {
-	// 	return RM_WAR_NOSUCHRECORD;
-	// }
-	// TRY(this->pf_FileHandle->MarkDirty(pageNum));
-	// unsigned int offset = this->rm_FileHeader.pageHeaderSize + this->rm_FileHeader.recordSize * slotNum;
-	// memset(pageData + offset, 0, this->rm_FileHeader.recordSize);
-	// SetBit((unsigned char *)(pageData + sizeof(RM_PageHeader) - 1), slotNum, false);
-
-	// if (rm_PageHeader->numRecord == this->rm_FileHeader.recordNumPerPage) {
-	// 	rm_PageHeader->nextPage = this->rm_FileHeader.firstFreePage;
-	// 	this->rm_FileHeader.firstFreePage = pageNum;
-	// 	this->bHeaderDirty = true;
-	// }
-	// rm_PageHeader->numRecord --;
-	// TRY(this->pf_FileHandle->UnpinPage(pageNum));
+	if (tot == this->rm_FileHeader.recordNumPerPage) {
+		this->bHeaderDirty = true;
+		this->rm_FileHeader.firstFreePage = rm_PageHeader->nextPage;
+	}
+	TRY(this->pf_FileHandle->UnpinPage(pageNum));
 
     return 0;
 }
@@ -131,6 +121,26 @@ RC RM_FileHandle::DeleteRec (const RID &rid) {
 }
 
 RC RM_FileHandle::UpdateRec (const RM_Record &rec) {
+	TRY(IsValid());
+	PageNum pageNum;
+	SlotNum slotNum;
+	if (rec.size != this->rm_FileHeader.recordSize) {
+		return RM_ERR_RECSIZE;
+	}
+	if (slotNum < 0 || slotNum >= this->rm_FileHeader.recordNumPerPage) {
+		return RM_ERR_SLOTNUM;
+	}
+	TRY(rec.rid.GetPageNum(pageNum));
+	TRY(rec.rid.GetSlotNum(slotNum));
+
+	PF_PageHandle pageHandle;
+	TRY(this->pf_FileHandle->GetThisPage(pageNum, pageHandle));
+
+	char *pData;
+	TRY(pageHandle.GetData(pData));
+
+	unsigned int offset = this->rm_FileHeader.pageHeaderSize + this->rm_FileHeader.recordSize * slotNum;
+	memcpy(pData + offset, rec.data, (size_t)rec.size);
     return 0;
 }
 

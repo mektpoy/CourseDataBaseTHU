@@ -16,7 +16,7 @@ RM_Manager::~RM_Manager() {
 
 RC RM_Manager::CreateFile(const char *fileName, int recordSize) {
     if (recordSize > PF_PAGE_SIZE - sizeof(RM_PageHeader)) {
-        return RM_ERR_RECORDSIZE;
+        return RM_ERR_RECSIZETOOLARGE;
     }
     TRY(pfm->CreateFile(fileName));
 

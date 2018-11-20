@@ -138,10 +138,11 @@ void RM_PrintError(RC rc);
 
 #define RM_WAR_NOSUCHRECORD (START_RM_WARN + 0) // page pinned in buffer
 
-#define RM_ERR_RECORDSIZE   (START_RM_ERR - 0)  // record size too large
-#define RM_ERR_SLOTNUM      (START_RM_ERR - 1)  // slot num is not valid
-#define RM_ERR_FILENOTOPEN  (START_RM_ERR - 2)  // file is not opened
-#define RM_ERR_NULLRECORDDATA (START_RM_ERR - 3) // record data can not be null
+#define RM_ERR_RECSIZETOOLARGE      (START_RM_ERR - 0)  // record size too large
+#define RM_ERR_SLOTNUM              (START_RM_ERR - 1)  // slot num is not valid
+#define RM_ERR_FILENOTOPEN          (START_RM_ERR - 2)  // file is not opened
+#define RM_ERR_NULLRECDATA          (START_RM_ERR - 3)  // record data can not be null
+#define RM_ERR_RECSIZE              (START_RM_ERR - 4)  // record size is not avaliable
 
 #endif
 
