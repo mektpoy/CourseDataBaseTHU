@@ -107,10 +107,9 @@ public:
     RC GetNextRec(RM_Record &rec);               // Get next matching record
     RC CloseScan ();                            // Close the scan
  private:
-    RM_FileHandle * prmh;
+    RM_FileHandle *fileHandle;
     RID current;
     bool bOpen;
-
 };
 
 //

@@ -1,4 +1,4 @@
-#include "rm_rid.h"
+#include "rid.h"
 
 RID::RID()
 {

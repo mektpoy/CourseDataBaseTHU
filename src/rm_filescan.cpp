@@ -5,6 +5,9 @@ using namespace std;
 
 RM_FileScan::RM_FileScan()
 {
+    fileHandle = NULL;
+    current = RID(0, 0);
+    bool bOpen;
 }
 
 RM_FileScan::~RM_FileScan()
