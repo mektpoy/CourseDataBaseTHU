@@ -22,16 +22,12 @@ RC RM_Manager::CreateFile(const char *fileName, int recordSize) {
 
     PF_FileHandle fileHandle;
     PF_PageHandle pageHandle;
-    RM_FileHeader *fileHeader;
-    //RM_PageHeader *pageHeader;
-
 
     char *pageData;
 
     TRY(pfm->OpenFile(fileName, fileHandle));
     TRY(fileHandle.AllocatePage(pageHandle));
     TRY(pageHandle.GetData(pageData));
-    fileHeader = (RM_FileHeader *)pageData;
 
 //  num * (recordSize) + [(num + 7) / 8] <= (PF_PAGE_SIZE - sizeof(RM_PageHeader) + 1)
 //  RM_HEADER_SIZE = sizeof(RM_PageHeader) + [(num + 7) / 8]
@@ -71,6 +67,15 @@ RC RM_Manager::OpenFile(const char *fileName, RM_FileHandle &fileHandle) {
 }
 
 RC RM_Manager::CloseFile(RM_FileHandle &fileHandle) {
-    //return pfm->CloseFile(this->pf_FileHandle)
+    PF_PageHandle pageHandle;
+    char *pData;
+    if (fileHandle.bHeaderDirty) {
+        TRY(fileHandle.pf_FileHandle->GetFirstPage(pageHandle));
+        TRY(fileHandle.pf_FileHandle->GetFirstPage(pageHandle));
+        TRY(pageHandle.GetData(pData));
+        memcpy(pData, &fileHandle.rm_FileHeader, sizeof(RM_FileHeader));
+    }
+    pfm->CloseFile(*(fileHandle.pf_FileHandle));
+    fileHandle.pf_FileHandle = NULL;
     return 0;
 }

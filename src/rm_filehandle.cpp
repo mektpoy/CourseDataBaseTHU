@@ -8,6 +8,7 @@
 #include <iostream>
 
 RM_FileHandle::RM_FileHandle() {
+    pf_FileHandle = NULL;
 }
 
 RM_FileHandle::~RM_FileHandle() {
@@ -37,7 +38,7 @@ RC RM_FileHandle::GetRec (const RID &rid, RM_Record &rec) const {
 RC RM_FileHandle::InsertRec (const char *pData, RID &rid) {
 	TRY(IsValid());
 	if (pData == NULL) {
-		return RM_ERR_NULLRECORDDATA;
+		return RM_ERR_NULLRECDATA;
 	}
 
 	PF_PageHandle pageHandle;
