@@ -1,5 +1,5 @@
-#include "rm_rid.h"
-#include "rm_error.h"
+#include "rid.h"
+#include "rm.h"
 
 RID::RID()
 {
@@ -22,17 +22,17 @@ RC RID::GetPageNum(PageNum &pageNum) const{
         return 0;
     }
     else{
-        return RM_RID_PAGENUM_ERR
+        return RM_ERR_PAGENUM;
     }
 }
 
 RC RID::GetSlotNum(SlotNum &slotNum) const{
-    if(slow >=0 ){
+    if(slot >= 0){
         slotNum = slot;
         return 0;
     }
     else{
-        return RM_RID_SLOTNUM_ERR
+        return RM_ERR_SLOTNUM;
     }
 }
 

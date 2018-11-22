@@ -211,8 +211,12 @@ RC PF_FileHandle::GetThisPage(PageNum pageNum, PF_PageHandle &pageHandle) const
       return (PF_CLOSEDFILE);
 
    // Validate page number
-   if (!IsValidPageNum(pageNum))
+   if (!IsValidPageNum(pageNum)) {
+      if (pageNum >= hdr.numPages) {
+         return PF_EOF;
+      }
       return (PF_INVALIDPAGE);
+   }
 
    // Get this page from the buffer manager
    if ((rc = pBufferMgr->GetPage(unixfd, pageNum, &pPageBuf)))

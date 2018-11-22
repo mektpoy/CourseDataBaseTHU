@@ -21,7 +21,6 @@
 #include "redbase.h"
 #include "rid.h"
 #include "pf.h"
-#include "rm_error.h"
 
 struct RM_FileHeader {
     int firstFreePage;
@@ -63,6 +62,7 @@ private:
 //
 class RM_FileHandle {
     friend class RM_Manager;
+    friend class RM_FileScan;
 public:
     RM_FileHandle ();
     ~RM_FileHandle();
@@ -107,9 +107,17 @@ public:
     RC GetNextRec(RM_Record &rec);               // Get next matching record
     RC CloseScan ();                            // Close the scan
  private:
-    RM_FileHandle *fileHandle;
+    bool Check(char *pData);
+    const RM_FileHandle *fileHandle;
     RID current;
-    bool bOpen;
+    AttrType attrType;
+    int attrLength;
+    int attrOffset;
+    CompOp compOp;
+    void *value;
+    int valueINT;
+    double valueFLOAT;
+    char *valueSTRING;
 };
 
 //
@@ -136,12 +144,17 @@ private:
 void RM_PrintError(RC rc);
 
 #define RM_WAR_NOSUCHRECORD (START_RM_WARN + 0) // page pinned in buffer
+#define RM_WAR_EOF          (START_RM_WARN + 1)
+#define RM_WAR_SCANNOTOPEN  (START_RM_WARN + 2) // scan is not open
 
 #define RM_ERR_RECSIZETOOLARGE      (START_RM_ERR - 0)  // record size too large
 #define RM_ERR_SLOTNUM              (START_RM_ERR - 1)  // slot num is not valid
 #define RM_ERR_FILENOTOPEN          (START_RM_ERR - 2)  // file is not opened
 #define RM_ERR_NULLRECDATA          (START_RM_ERR - 3)  // record data can not be null
 #define RM_ERR_RECSIZE              (START_RM_ERR - 4)  // record size is not avaliable
+#define RM_ERR_ATTRLENGTH           (START_RM_ERR - 5)  // attribute length is not avaliable
+#define RM_ERR_PAGENUM              (START_RM_ERR - 6)
+#define RM_ERR_NULLRECORD           (START_RM_ERR - 7)
 
 #endif
 

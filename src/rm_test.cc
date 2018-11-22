@@ -161,8 +161,9 @@ void PrintError(RC rc)
 {
     if (abs(rc) <= END_PF_WARN)
         PF_PrintError(rc);
-    else if (abs(rc) <= END_RM_WARN)
-        RM_PrintError(rc);
+    else if (abs(rc) <= END_RM_WARN) {
+        //RM_PrintError(rc);
+    }
     else
         cerr << "Error code out of range: " << rc << "\n";
 }
@@ -294,7 +295,7 @@ RC VerifyFile(RM_FileHandle &fh, int numRecs)
         found[pRecBuf->num] = 1;
     }
 
-    if (rc != RM_EOF)
+    if (rc != RM_WAR_EOF)
         goto err;
 
     if ((rc=fs.CloseScan()))
@@ -345,7 +346,7 @@ RC PrintFile(RM_FileScan &fs)
         PrintRecord(*pRecBuf);
     }
 
-    if (rc != RM_EOF)
+    if (rc != RM_WAR_EOF)
         return (rc);
 
     printf("%d records found\n", n);

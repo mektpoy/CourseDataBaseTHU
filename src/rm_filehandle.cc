@@ -6,6 +6,7 @@
 #include "rm.h"
 #include "rm_internal.h"
 #include <iostream>
+#include <cassert>
 
 RM_FileHandle::RM_FileHandle() {
     pf_FileHandle = NULL;
@@ -20,6 +21,7 @@ RC RM_FileHandle::GetRec (const RID &rid, RM_Record &rec) const {
 	SlotNum slotNum;
 	TRY(rid.GetPageNum(pageNum));
 	TRY(rid.GetSlotNum(slotNum));
+	if (pageNum <= 1) return RM_ERR_PAGENUM;
 	if (slotNum < 0 || slotNum >= this->rm_FileHeader.recordNumPerPage) return RM_ERR_SLOTNUM;
 
 	PF_PageHandle pageHandle;
@@ -30,7 +32,8 @@ RC RM_FileHandle::GetRec (const RID &rid, RM_Record &rec) const {
 
 	unsigned int offset = this->rm_FileHeader.pageHeaderSize + this->rm_FileHeader.recordSize * slotNum;
 	rec.size = this->rm_FileHeader.recordSize;
-	rec.data = pData + offset;
+	rec.data = (char *) malloc(this->rm_FileHeader.recordSize);
+	memcpy (rec.data, pData + offset, this->rm_FileHeader.recordSize);
 	rec.rid = rid;
     return 0;
 }

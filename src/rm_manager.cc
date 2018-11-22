@@ -15,7 +15,7 @@ RM_Manager::~RM_Manager() {
 }
 
 RC RM_Manager::CreateFile(const char *fileName, int recordSize) {
-    if (recordSize > PF_PAGE_SIZE - sizeof(RM_PageHeader)) {
+    if (recordSize > PF_PAGE_SIZE - (int)sizeof(RM_PageHeader)) {
         return RM_ERR_RECSIZETOOLARGE;
     }
     TRY(pfm->CreateFile(fileName));
@@ -32,7 +32,7 @@ RC RM_Manager::CreateFile(const char *fileName, int recordSize) {
 //  num * (recordSize) + [(num + 7) / 8] <= (PF_PAGE_SIZE - sizeof(RM_PageHeader) + 1)
 //  RM_HEADER_SIZE = sizeof(RM_PageHeader) + [(num + 7) / 8]
     int num = (PF_PAGE_SIZE - sizeof(RM_PageHeader) + 1) / (recordSize + 1.0 / 8.0);
-    while (num * recordSize + (num + 7) / 8 > PF_PAGE_SIZE - sizeof(RM_PageHeader) + 1)
+    while (num * recordSize + (num + 7) / 8 > PF_PAGE_SIZE - (int)sizeof(RM_PageHeader) + 1)
         num --;
     auto p = (RM_FileHeader *)pageData;
     p->firstFreePage = RM_PAGE_LIST_END;
@@ -40,6 +40,7 @@ RC RM_Manager::CreateFile(const char *fileName, int recordSize) {
     p->recordNumPerPage = num;
     p->pageHeaderSize = sizeof(RM_PageHeader) - 1 + (num + 7) / 8;
 
+    TRY(fileHandle.UnpinPage(0));
     TRY(pfm->CloseFile(fileHandle));
     return 0;
 }

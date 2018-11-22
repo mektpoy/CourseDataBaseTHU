@@ -16,3 +16,11 @@ src/pf_test2\.dSYM/Contents/Resources/DWARF/pf_test2
 src/pf_test3\.dSYM/Contents/Info\.plist
 
 src/pf_test3\.dSYM/Contents/Resources/DWARF/pf_test3
+
+*.plist
+
+src/rm_test\.dSYM/Contents/Resources/DWARF/rm_test
+
+src/testrel
+
+src/rm_test

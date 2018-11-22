@@ -1,7 +1,6 @@
 
 #include "rid.h"
 #include "rm.h"
-#include "rm_error.h"
 #include <iostream>
 
 #define INIT_REC_SIZE  -1
@@ -32,7 +31,7 @@ RC RM_Record::GetData(char *&pData) const{
 		return 0;
 	}
 	else 
-		return RM_NULLRECORD; // todo:需要定义一个record为空的错误编号
+		return RM_ERR_NULLRECORD; 
 
 }
 
@@ -44,7 +43,7 @@ RC RM_Record::GetRid (RID &rid) const
         return 0;
     }
 	else 
-		return RM_NULLRECORD;
+		return RM_ERR_NULLRECORD;
 }
 
 
