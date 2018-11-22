@@ -162,7 +162,7 @@ void PrintError(RC rc)
     if (abs(rc) <= END_PF_WARN)
         PF_PrintError(rc);
     else if (abs(rc) <= END_RM_WARN) {
-        //RM_PrintError(rc);
+        cout << "Error code: " << rc << "\n";
     }
     else
         cerr << "Error code out of range: " << rc << "\n";

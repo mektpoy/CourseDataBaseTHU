@@ -47,7 +47,6 @@ RC RM_FileHandle::InsertRec (const char *pData, RID &rid) {
 	PF_PageHandle pageHandle;
 	PageNum pageNum;
 	SlotNum slotNum;
-
 	if (this->rm_FileHeader.firstFreePage == RM_PAGE_LIST_END) {
 		TRY(this->pf_FileHandle->AllocatePage(pageHandle));
 		TRY(pageHandle.GetPageNum(pageNum));
@@ -85,6 +84,7 @@ RC RM_FileHandle::InsertRec (const char *pData, RID &rid) {
 		this->rm_FileHeader.firstFreePage = rm_PageHeader->nextPage;
 	}
 	TRY(this->pf_FileHandle->UnpinPage(pageNum));
+	rid = RID(pageNum, slotNum);
 
     return 0;
 }

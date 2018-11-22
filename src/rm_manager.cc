@@ -50,33 +50,33 @@ RC RM_Manager::DestroyFile(const char *fileName) {
 }
 
 RC RM_Manager::OpenFile(const char *fileName, RM_FileHandle &fileHandle) {
-    PF_FileHandle pf_FileHandle;
+    fileHandle.pf_FileHandle = new PF_FileHandle();
     PF_PageHandle pageHandle;
     char *pData;
 
-    TRY(pfm->OpenFile(fileName, pf_FileHandle));
-    TRY(pf_FileHandle.GetFirstPage(pageHandle));
+    TRY(pfm->OpenFile(fileName, *fileHandle.pf_FileHandle));
+    TRY(fileHandle.pf_FileHandle->GetFirstPage(pageHandle));
     TRY(pageHandle.GetData(pData));
 
     fileHandle.bFileOpen = true;
     fileHandle.bHeaderDirty = false;
     fileHandle.rm_FileHeader = *(RM_FileHeader *)pData;
 
-    TRY(pf_FileHandle.UnpinPage(0));
+    TRY(fileHandle.pf_FileHandle->UnpinPage(0));
 
     return 0;
 }
 
 RC RM_Manager::CloseFile(RM_FileHandle &fileHandle) {
     PF_PageHandle pageHandle;
-    char *pData;
     if (fileHandle.bHeaderDirty) {
-        TRY(fileHandle.pf_FileHandle->GetFirstPage(pageHandle));
-        TRY(fileHandle.pf_FileHandle->GetFirstPage(pageHandle));
+        char *pData;
+        TRY(fileHandle.pf_FileHandle->GetNextPage(0, pageHandle));
         TRY(pageHandle.GetData(pData));
         memcpy(pData, &fileHandle.rm_FileHeader, sizeof(RM_FileHeader));
     }
     pfm->CloseFile(*(fileHandle.pf_FileHandle));
+
     fileHandle.pf_FileHandle = NULL;
     return 0;
 }
