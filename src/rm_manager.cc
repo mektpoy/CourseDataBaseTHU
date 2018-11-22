@@ -40,7 +40,10 @@ RC RM_Manager::CreateFile(const char *fileName, int recordSize) {
     p->recordNumPerPage = num;
     p->pageHeaderSize = sizeof(RM_PageHeader) - 1 + (num + 7) / 8;
 
-    TRY(fileHandle.UnpinPage(0));
+    PageNum pageNum;
+    TRY(pageHandle.GetPageNum(pageNum));
+    TRY(fileHandle.UnpinPage(pageNum));
+    std::cout << pageNum << std::endl;
     TRY(pfm->CloseFile(fileHandle));
     return 0;
 }
@@ -62,7 +65,9 @@ RC RM_Manager::OpenFile(const char *fileName, RM_FileHandle &fileHandle) {
     fileHandle.bHeaderDirty = false;
     fileHandle.rm_FileHeader = *(RM_FileHeader *)pData;
 
-    TRY(fileHandle.pf_FileHandle->UnpinPage(0));
+    PageNum pageNum;
+    TRY(pageHandle.GetPageNum(pageNum));
+    TRY(fileHandle.pf_FileHandle->UnpinPage(pageNum));
 
     return 0;
 }
@@ -71,7 +76,7 @@ RC RM_Manager::CloseFile(RM_FileHandle &fileHandle) {
     PF_PageHandle pageHandle;
     if (fileHandle.bHeaderDirty) {
         char *pData;
-        TRY(fileHandle.pf_FileHandle->GetNextPage(0, pageHandle));
+        TRY(fileHandle.pf_FileHandle->GetFirstPage(pageHandle));
         TRY(pageHandle.GetData(pData));
         memcpy(pData, &fileHandle.rm_FileHeader, sizeof(RM_FileHeader));
     }

@@ -15,12 +15,15 @@
 //
 
 inline bool GetBit(unsigned char *bitmask, int pos) {
-	return bitmask[pos >> 3] >> (pos & 0x7) & 1;
+	return (bool)(bitmask[pos >> 3] >> (pos & 0x7) & 1);
 }
 
 inline void SetBit(unsigned char *bitmask, int pos, bool value) {
-	int c = bitmask[pos >> 3] >> (pos & 0x7) & 1;
-	bitmask[pos >> 3] += -(c << (pos & 0x7)) + (value << (pos & 0x7));
+	if (value) {
+		bitmask[pos >> 3] |= (unsigned char) (1 << (pos & 0x7));
+	} else {
+		bitmask[pos >> 3] &= (unsigned char)~(1 << (pos & 0x7));
+	}
 }
 
 #define CREATION_MASK      0600    // r/w privileges to owner only

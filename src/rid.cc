@@ -36,4 +36,10 @@ RC RID::GetSlotNum(SlotNum &slotNum) const{
     }
 }
 
+PageNum RID::GetPage() const {
+    return this->page;
+}
 
+SlotNum RID::GetSlot() const {
+    return this->slot;
+}

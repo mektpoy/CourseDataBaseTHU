@@ -155,6 +155,7 @@ void RM_PrintError(RC rc);
 #define RM_ERR_ATTRLENGTH           (START_RM_ERR - 5)  // attribute length is not avaliable
 #define RM_ERR_PAGENUM              (START_RM_ERR - 6)
 #define RM_ERR_NULLRECORD           (START_RM_ERR - 7)
+#define RM_ERR_NOSUCHREC            (START_RM_ERR - 8)
 
 #endif
 

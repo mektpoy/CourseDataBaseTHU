@@ -30,11 +30,11 @@ using namespace std;
 //
 // Defines
 //
-char FILENAME[] = "testrel";         // test file name
+const char * FILENAME =  "testrel";       // test file name
 #define STRLEN      29               // length of string in testrec
 #define PROG_UNIT   50               // how frequently to give progress
                                       //   reports when adding lots of recs
-#define FEW_RECS   20                // number of records added in
+#define FEW_RECS  500                // number of records added in
 
 //
 // Computes the offset of a field in a record (should be in <stddef.h>)
@@ -64,21 +64,24 @@ RM_Manager rmm(pfm);
 RC Test1(void);
 RC Test2(void);
 
-void PrintError(RC rc);
+void PrintErrorAll(RC rc);
 void LsFile(char *fileName);
 void PrintRecord(TestRec &recBuf);
 RC AddRecs(RM_FileHandle &fh, int numRecs);
-RC VerifyFile(RM_FileHandle &fh, int numRecs);
-RC PrintFile(RM_FileHandle &fh);
 
-RC CreateFile(char *fileName, int recordSize);
-RC DestroyFile(char *fileName);
-RC OpenFile(char *fileName, RM_FileHandle &fh);
-RC CloseFile(char *fileName, RM_FileHandle &fh);
+RC VerifyFile(RM_FileHandle &fh, int numRecs);
+RC PrintFile(RM_FileScan &fh);
+
+RC CreateFile(const char *fileName, int recordSize);
+RC DestroyFile(const char *fileName);
+RC OpenFile(const char *fileName, RM_FileHandle &fh);
+RC CloseFile(const char *fileName, RM_FileHandle &fh);
 RC InsertRec(RM_FileHandle &fh, char *record, RID &rid);
 RC UpdateRec(RM_FileHandle &fh, RM_Record &rec);
 RC DeleteRec(RM_FileHandle &fh, RID &rid);
+
 RC GetNextRecScan(RM_FileScan &fs, RM_Record &rec);
+
 
 //
 // Array of pointers to the test functions
@@ -114,7 +117,7 @@ int main(int argc, char *argv[])
             if ((rc = (tests[testNum])())) {
 
                 // Print the error and exit
-                PrintError(rc);
+                PrintErrorAll(rc);
                 return (1);
             }
     }
@@ -139,7 +142,7 @@ int main(int argc, char *argv[])
             if ((rc = (tests[testNum - 1])())) {
 
                 // Print the error and exit
-                PrintError(rc);
+                PrintErrorAll(rc);
                 return (1);
             }
         }
@@ -151,21 +154,8 @@ int main(int argc, char *argv[])
     return (0);
 }
 
-//
-// PrintError
-//
-// Desc: Print an error message by calling the proper component-specific
-//       print-error function
-//
-void PrintError(RC rc)
-{
-    if (abs(rc) <= END_PF_WARN)
-        PF_PrintError(rc);
-    else if (abs(rc) <= END_RM_WARN) {
-        cout << "Error code: " << rc << "\n";
-    }
-    else
-        cerr << "Error code out of range: " << rc << "\n";
+void PrintErrorAll (int RC) {
+    std::cout << "non-zero return code :" << RC << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -177,7 +167,7 @@ void PrintError(RC rc)
 //
 // Desc: list the filename's directory entry
 //
-void LsFile(char *fileName)
+void LsFile(const char *fileName)
 {
     char command[80];
 
@@ -195,6 +185,8 @@ void PrintRecord(TestRec &recBuf)
 {
     printf("[%s, %d, %f]\n", recBuf.str, recBuf.num, recBuf.r);
 }
+
+
 
 //
 // AddRecs
@@ -227,7 +219,7 @@ RC AddRecs(RM_FileHandle &fh, int numRecs)
             return (rc);
 
         if ((i + 1) % PROG_UNIT == 0){
-            printf("%d  ", i + 1);
+            printf("%d\n", i + 1);
             fflush(stdout);
         }
     }
@@ -263,6 +255,12 @@ RC VerifyFile(RM_FileHandle &fh, int numRecs)
     RM_FileScan fs;
     if ((rc=fs.OpenScan(fh,INT,sizeof(int),offsetof(TestRec, num),
                         NO_OP, NULL, NO_HINT)))
+      //int val = 10;
+    // if ((rc=fs.OpenScan(fh,INT,sizeof(int),offsetof(TestRec, num),
+    //                     LT_OP, (void*)&val, NO_HINT)))
+//     const char * grr = "a15";
+//     if ((rc=fs.OpenScan(fh,STRING,3,offsetof(TestRec, str),
+//                         GE_OP, (void*)grr, NO_HINT)))
         return (rc);
 
     // For each record in the file
@@ -283,6 +281,9 @@ RC VerifyFile(RM_FileHandle &fh, int numRecs)
             pRecBuf->r != (float)pRecBuf->num) {
             printf("VerifyFile: invalid record = [%s, %d, %f]\n",
                    pRecBuf->str, pRecBuf->num, pRecBuf->r);
+            printf("Nandu expected RID[%d,%d] = [%s, %d, %f]\n",
+                   rid.GetPage(), rid.GetSlot(), stringBuf, pRecBuf->num, pRecBuf->r);
+
             exit(1);
         }
 
@@ -292,6 +293,9 @@ RC VerifyFile(RM_FileHandle &fh, int numRecs)
             exit(1);
         }
 
+        printf("Nandu found RID[%d,%d] = [%s, %d, %f]\n",
+               rid.GetPage(), rid.GetSlot(), stringBuf, pRecBuf->num, pRecBuf->r);
+
         found[pRecBuf->num] = 1;
     }
 
@@ -299,10 +303,11 @@ RC VerifyFile(RM_FileHandle &fh, int numRecs)
         goto err;
 
     if ((rc=fs.CloseScan()))
-        return (rc);
+        goto err;
 
     // make sure we had the right number of records in the file
     if (n != numRecs) {
+        delete[] found;
         printf("%d records in file (supposed to be %d)\n",
                n, numRecs);
         exit(1);
@@ -361,12 +366,13 @@ RC PrintFile(RM_FileScan &fs)
 // and/or set breakpoints when testing these methods.                 //
 ////////////////////////////////////////////////////////////////////////
 
+
 //
 // CreateFile
 //
 // Desc: call RM_Manager::CreateFile
 //
-RC CreateFile(char *fileName, int recordSize)
+RC CreateFile(const char *fileName, int recordSize)
 {
     printf("\ncreating %s\n", fileName);
     return (rmm.CreateFile(fileName, recordSize));
@@ -377,18 +383,19 @@ RC CreateFile(char *fileName, int recordSize)
 //
 // Desc: call RM_Manager::DestroyFile
 //
-RC DestroyFile(char *fileName)
+RC DestroyFile(const char *fileName)
 {
     printf("\ndestroying %s\n", fileName);
     return (rmm.DestroyFile(fileName));
 }
+
 
 //
 // OpenFile
 //
 // Desc: call RM_Manager::OpenFile
 //
-RC OpenFile(char *fileName, RM_FileHandle &fh)
+RC OpenFile(const char *fileName, RM_FileHandle &fh)
 {
     printf("\nopening %s\n", fileName);
     return (rmm.OpenFile(fileName, fh));
@@ -399,12 +406,13 @@ RC OpenFile(char *fileName, RM_FileHandle &fh)
 //
 // Desc: call RM_Manager::CloseFile
 //
-RC CloseFile(char *fileName, RM_FileHandle &fh)
+RC CloseFile(const char *fileName, RM_FileHandle &fh)
 {
     if (fileName != NULL)
         printf("\nClosing %s\n", fileName);
     return (rmm.CloseFile(fh));
 }
+
 
 //
 // InsertRec
@@ -446,6 +454,7 @@ RC GetNextRecScan(RM_FileScan &fs, RM_Record &rec)
     return (fs.GetNextRec(rec));
 }
 
+
 /////////////////////////////////////////////////////////////////////
 // Sample test functions follow.                                   //
 /////////////////////////////////////////////////////////////////////
@@ -460,9 +469,11 @@ RC Test1(void)
 
     printf("test1 starting ****************\n");
 
-    if ((rc = CreateFile(FILENAME, sizeof(TestRec))) ||
-        (rc = OpenFile(FILENAME, fh)) ||
-        (rc = CloseFile(FILENAME, fh)))
+    if (
+        (rc = CreateFile(FILENAME, sizeof(TestRec)))
+        || (rc = OpenFile(FILENAME, fh))
+        || (rc = CloseFile(FILENAME, fh))
+      )
         return (rc);
 
     LsFile(FILENAME);
@@ -487,10 +498,12 @@ RC Test2(void)
     if ((rc = CreateFile(FILENAME, sizeof(TestRec))) ||
         (rc = OpenFile(FILENAME, fh)) ||
         (rc = AddRecs(fh, FEW_RECS)) ||
+        (rc = VerifyFile(fh, FEW_RECS)) ||
         (rc = CloseFile(FILENAME, fh)))
         return (rc);
 
     LsFile(FILENAME);
+    // PrintFile(fh);
 
     if ((rc = DestroyFile(FILENAME)))
         return (rc);

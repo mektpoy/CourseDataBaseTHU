@@ -21,20 +21,30 @@ RC RM_FileHandle::GetRec (const RID &rid, RM_Record &rec) const {
 	SlotNum slotNum;
 	TRY(rid.GetPageNum(pageNum));
 	TRY(rid.GetSlotNum(slotNum));
-	if (pageNum <= 1) return RM_ERR_PAGENUM;
+	if (pageNum <= 0) return RM_ERR_PAGENUM;
 	if (slotNum < 0 || slotNum >= this->rm_FileHeader.recordNumPerPage) return RM_ERR_SLOTNUM;
 
 	PF_PageHandle pageHandle;
-	TRY(this->pf_FileHandle->GetThisPage(pageNum, pageHandle));
+	int rc = this->pf_FileHandle->GetThisPage(pageNum, pageHandle);
+	if (rc) {
+		if (rc < 0 || rc == PF_EOF) {
+			return rc;
+		}
+		std::cout << "non-zero return code : " << rc << std::endl; 
+	}
 
 	char *pData;
 	TRY(pageHandle.GetData(pData));
 
+	if (GetBit((unsigned char *)(pData + sizeof(RM_PageHeader) - 1), slotNum) == false) {
+		return RM_ERR_NOSUCHREC;
+	}
 	unsigned int offset = this->rm_FileHeader.pageHeaderSize + this->rm_FileHeader.recordSize * slotNum;
 	rec.size = this->rm_FileHeader.recordSize;
 	rec.data = (char *) malloc(this->rm_FileHeader.recordSize);
 	memcpy (rec.data, pData + offset, this->rm_FileHeader.recordSize);
 	rec.rid = rid;
+	TRY(this->pf_FileHandle->UnpinPage(pageNum));
     return 0;
 }
 
@@ -55,13 +65,16 @@ RC RM_FileHandle::InsertRec (const char *pData, RID &rid) {
 		RM_PageHeader *rm_PageHeader = (RM_PageHeader *)pageData;
 		memset(rm_PageHeader, 0, (size_t)this->rm_FileHeader.pageHeaderSize);
 		rm_PageHeader->firstFreeSlot = 0;
-		rm_PageHeader->nextPage = RM_PAGE_USED;
+		rm_PageHeader->nextPage = RM_PAGE_LIST_END;
 		rm_PageHeader->numRecord = 0;
 		this->bHeaderDirty = true;
 		this->rm_FileHeader.firstFreePage = pageNum;
-		short *p = (short *)(pageData + this->rm_FileHeader.pageHeaderSize);
+		char *p = (pageData + this->rm_FileHeader.pageHeaderSize);
 		for (short i = 0; i < this->rm_FileHeader.recordNumPerPage; i ++) {
-			*p = i;
+			std::cout << "slot = " << i << " address = " << (short *)p << std::endl;
+			*(short *)p = i + 1;
+			if (*(short *)p == this->rm_FileHeader.recordNumPerPage)
+				*(short *)p = -1;
 			p += this->rm_FileHeader.recordSize;
 		}
 		// TRY(this->pf_FileHandle->UnpinPage(pageNum));
@@ -75,13 +88,21 @@ RC RM_FileHandle::InsertRec (const char *pData, RID &rid) {
 	int &tot = rm_PageHeader->numRecord;
 	assert (tot < this->rm_FileHeader.recordNumPerPage);
 	slotNum = rm_PageHeader->firstFreeSlot;
+
+	std::cout << "pageNum : " << pageNum << ", slotNum : " << slotNum << std::endl;
+	assert(GetBit((unsigned char *)(pageData + sizeof(RM_PageHeader) - 1), slotNum) == false);
+	SetBit((unsigned char *)(pageData + sizeof(RM_PageHeader) - 1), slotNum, true);
 	char *dest = pageData + this->rm_FileHeader.pageHeaderSize + slotNum * this->rm_FileHeader.recordSize;
+	std::cout << "dest address : " << (short *)dest << std::endl;
+	TRY(this->pf_FileHandle->MarkDirty(pageNum));
 	rm_PageHeader->firstFreeSlot = *(short *) dest;
+	memcpy(dest, pData, this->rm_FileHeader.recordSize);
 	tot ++;
 
 	if (tot == this->rm_FileHeader.recordNumPerPage) {
 		this->bHeaderDirty = true;
 		this->rm_FileHeader.firstFreePage = rm_PageHeader->nextPage;
+		rm_PageHeader->nextPage = RM_PAGE_USED;
 	}
 	TRY(this->pf_FileHandle->UnpinPage(pageNum));
 	rid = RID(pageNum, slotNum);
@@ -144,7 +165,9 @@ RC RM_FileHandle::UpdateRec (const RM_Record &rec) {
 	TRY(pageHandle.GetData(pData));
 
 	unsigned int offset = this->rm_FileHeader.pageHeaderSize + this->rm_FileHeader.recordSize * slotNum;
+	TRY(this->pf_FileHandle->MarkDirty(pageNum));
 	memcpy(pData + offset, rec.data, (size_t)rec.size);
+	TRY(this->pf_FileHandle->UnpinPage(pageNum));
     return 0;
 }
 
