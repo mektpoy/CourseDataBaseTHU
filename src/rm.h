@@ -4,7 +4,7 @@
 //   Record Manager component interface
 //
 // This file does not include the interface for the RID class.  This is
-// found in rm_rid.h
+// found in rid.h
 //
 
 #ifndef RM_H
