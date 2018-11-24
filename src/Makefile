@@ -39,7 +39,7 @@ PF_SOURCES     = pf_buffermgr.cc pf_error.cc pf_filehandle.cc \
 RM_SOURCES     = rm_manager.cc rm_filehandle.cc rm_record.cc \
 				 rm_filescan.cc rid.cc \
 				 statistics.cc
-IX_SOURCES     = statistics.cc
+IX_SOURCES     = ix_manager.cc statistics.cc
 SM_SOURCES     = statistics.cc #sm_stub.cc printer.cc
 QL_SOURCES     = statistics.cc #ql_manager_stub.cc
 UTILS_SOURCES  = #dbcreate.cc dbdestroy.cc redbase.cc

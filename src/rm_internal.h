@@ -26,7 +26,6 @@ inline void SetBit(unsigned char *bitmask, int pos, bool value) {
 	}
 }
 
-#define CREATION_MASK      0600    // r/w privileges to owner only
 #define RM_PAGE_LIST_END  -1       // end of list of free pages
 #define RM_PAGE_USED      -2       // page is being used
 
