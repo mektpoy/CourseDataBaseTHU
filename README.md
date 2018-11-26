@@ -46,3 +46,34 @@ RM阶段包括下述文件：
 	};
 
 这里对slot的链表有一个小技巧，空闲的slot可以用来存下一个空闲的slot的位置，这样可以组成一个链表，对slot进行修改的时候只要取链表头部就能快速维护这个结构。
+
+#### IX
+
+IX阶段包含下述文件：
+
+	ix.h
+	ix_internal.h
+	ix_indexhandle.cc
+	ix_indexscan.cc
+	ix_manager.cc
+
+在IX阶段，使用第0页作为FileHeader，具有如下结构：
+
+	struct IX_FileHeader {
+		int 		rootPage;  // index根节点的PageNum
+		AttrType 	attrType;  // 索引值的类型
+		int 		attrLength;  // 索引值得长度（单位是字节）
+		int			entrySize;  // 索引值在实际储存时的总长（比上个值多了sizeof(RID)和sizeof(PageNum)
+		int 		entryNumPerPage;  // 每页总共能储存多少索引值
+	};
+
+而除了第0页，每一页有一个PageHeader，具有如下结构：
+
+	struct IX_PageHeader {
+		int nextPage;  // 对于叶节点，储存B+树下一跳的PageNum
+		int numIndex;  // 这一页已经储存了多少条Index
+	};
+
+对于Index中可能出现的值相同的元素，处理方法是，将RID也作为比较的第二关键字，这样可以保证比较Index的时候两两不同。
+
+对于B+树的中间节点，会储存子节点的（双关键字）最大值，并且储存子节点的页号。对于插入操作，当前节点若超过了可以容纳的长度则分裂，调用IX_IndexHandle::SplitAndInsert，首先将当前节点分裂，如果是叶子节点，顺便维护一下单向链表。对于删除操作，如果将当前节点删空了的话，返回的时候打个标记，回溯的时候将对应位置也做删除。

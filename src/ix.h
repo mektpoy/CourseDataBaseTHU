@@ -56,6 +56,7 @@ private:
 	char *indexData;
 	bool bSonSplited;
 	bool bHeaderDirty;
+	bool bMaxModified;
 };
 
 //
@@ -94,6 +95,7 @@ private:
 void IX_PrintError(RC rc);
 
 #define IX_WAR_DUPLICATEDIX (START_IX_WARN + 0)
+#define IX_WAR_NOSUCHINDEX	(START_IX_WARN + 1)
 
 #define IX_ERR_FILENOTOPEN 	(START_IX_ERR - 0)
 #define IX_ERR_NULLENTRY	(START_IX_ERR - 1)

@@ -75,7 +75,7 @@ RC IX_IndexHandle::SplitAndInsert(PF_PageHandle &pageHandle, IX_PageHeader *page
 		memmove(newPageData, pData + mid * this->fileHeader.entrySize, pageHeader->numIndex - mid);
 		pageHeader->numIndex = mid;
 		if (pos < mid) {
-			memmove(pData + (pos + 1) * this->fileHeader.entrySize, 
+			memmove(pData + (pos + 1) * this->fileHeader.entrySize,
 				pData + pos * this->fileHeader.entrySize,
 				(size_t)(pageHeader->numIndex - pos) * this->fileHeader.entrySize);
 			TRY(SetEntry(pData, pos, this->Data, this->DataRid, this->newSonPageNum));
@@ -117,16 +117,13 @@ RC IX_IndexHandle::Insert(PF_PageHandle pageHandle) {
 	IX_PageHeader *pageHeader = (IX_PageHeader *)pData;
 
 	pData = pData + sizeof(IX_PageHeader);
-	int pos = -1;
+	int pos = pageHeader->numIndex - 1;
 	char *p = pData;
 	for (int i = 0; i < pageHeader->numIndex; i ++, p = p + this->fileHeader.entrySize) {
 		int res = Compare(p);
 		if (res == -1) pos = i;
 		if (res == 0) return IX_WAR_DUPLICATEDIX;
-		break;
-	}
-	if (pos == -1){
-		pos = pageHeader->numIndex - 1;
+		if (res == 1) break;
 	}
 
 	if (pageHeader->nextPage == IX_PAGE_NOT_LEAF){
@@ -139,16 +136,13 @@ RC IX_IndexHandle::Insert(PF_PageHandle pageHandle) {
 		if (rc == IX_WAR_DUPLICATEDIX || rc < 0) {
 			return rc;
 		}
-		pos = -1;
+		pos = pageHeader->numIndex - 1;
 		p = pData;
 		for (int i = 0; i < pageHeader->numIndex; i ++, p = p + this->fileHeader.entrySize) {
 			int res = Compare(p);
 			if (res == -1) pos = i;
 			if (res == 0) return IX_WAR_DUPLICATEDIX;
-			break;
-		}
-		if (pos == -1){
-			pos = pageHeader->numIndex - 1;
+			if (res == 1) break;
 		}
 		TRY(SplitAndInsert(pageHandle, pageHeader, pData, pos, false));
 	} else {
@@ -197,70 +191,90 @@ RC IX_IndexHandle::InsertEntry(void *pData, const RID &rid){
 }
 
 RC IX_IndexHandle::Remove(PF_PageHandle pageHandle) {
-	// char *pData;
-	// PageNum pageNum;
+	char *pData;
+	PageNum pageNum;
 
-	// TRY(pageHandle.GetPageNum(pageNum));
-	// TRY(pageHandle.GetData(pData));
-	// IX_PageHeader *pageHeader = (IX_PageHeader *)pData;
+	TRY(pageHandle.GetPageNum(pageNum));
+	TRY(pageHandle.GetData(pData));
+	IX_PageHeader *pageHeader = (IX_PageHeader *)pData;
 
-	// pData = pData + sizeof(IX_PageHeader);
-	// int pos = -1;
-	// char *p = pData;
-	// for (int i = 0; i < pageHeader->numIndex; i ++, p = p + this->fileHeader.entrySize) {
-	// 	int res = Compare(p);
-	// 	if (res == -1) pos = i;
-	// 	if (res == 0) return IX_WAR_DUPLICATEDIX;
-	// 	break;
-	// }
-	// if (pos == -1){
-	// 	pos = pageHeader->numIndex - 1;
-	// }
+	pData = pData + sizeof(IX_PageHeader);
+	int pos = pageHeader->numIndex - 1;
+	char *p = pData;
+	bool ok = false;
+	for (int i = 0; i < pageHeader->numIndex; i ++, p = p + this->fileHeader.entrySize) {
+		int res = Compare(p);
+		if (res <= 0) pos = i;
+		if (res == 0) ok = true;
+		if (res == 1) break;
+	}
 
-	// if (pageHeader->nextPage == IX_PAGE_NOT_LEAF){
-	// 	// NOT LEAF
-	// 	PageNum *sonPageNum = (PageNum *)(pData + pos * this->fileHeader.entrySize
-	// 		+ this->fileHeader.attrLength + sizeof(RID));
-	// 	PF_PageHandle sonPageHandle;
-	// 	this->fileHandle->GetThisPage(*sonPageNum, sonPageHandle);
-	// 	int rc = Insert(sonPageHandle);
-	// 	if (rc == IX_WAR_DUPLICATEDIX || rc < 0) {
-	// 		return rc;
-	// 	}
-	// 	pos = -1;
-	// 	p = pData;
-	// 	for (int i = 0; i < pageHeader->numIndex; i ++, p = p + this->fileHeader.entrySize) {
-	// 		int res = Compare(p);
-	// 		if (res == -1) pos = i;
-	// 		if (res == 0) return IX_WAR_DUPLICATEDIX;
-	// 		break;
-	// 	}
-	// 	if (pos == -1){
-	// 		pos = pageHeader->numIndex - 1;
-	// 	}
-	// 	TRY(SplitAndInsert(pageHandle, pageHeader, pData, pos, false));
-	// } else {
-	// 	// LEAF
-	// 	TRY(SplitAndInsert(pageHandle, pageHeader, pData, pos, true));
-	// }
+	if (pageHeader->nextPage == IX_PAGE_NOT_LEAF){
+		// NOT LEAF
+		PageNum *sonPageNum = (PageNum *)(pData + pos * this->fileHeader.entrySize
+			+ this->fileHeader.attrLength + sizeof(RID));
+		PF_PageHandle sonPageHandle;
+		this->fileHandle->GetThisPage(*sonPageNum, sonPageHandle);
+		int rc = Remove(sonPageHandle);
+		if (rc == IX_WAR_NOSUCHINDEX || rc < 0) {
+			return rc;
+		}
+		if (bSonSplited) {
+			memmove(pData + pos * this->fileHeader.entrySize, 
+				pData + (pos + 1) * this->fileHeader.entrySize,
+				(size_t)(pageHeader->numIndex - pos - 1) * this->fileHeader.entrySize);
+			pageHeader->numIndex --;
+			this->bSonSplited = (pageHeader->numIndex == 0);
+			if (!this->bSonSplited && pos == pageHeader->numIndex) {
+				this->bMaxModified = true;
+				char *dest = pData + (pageHeader->numIndex - 1) * this->fileHeader.entrySize;
+				memcpy(this->Data, dest, this->fileHeader.attrLength);
+				this->DataRid = *(RID *)(dest + this->fileHeader.attrLength);
+				this->newSonPageNum = pageNum;
+			} else {
+				this->bMaxModified = false;
+			}
+		} else {
+
+		}
+	} else {
+		// LEAF
+		if (!ok) {
+			return IX_WAR_NOSUCHINDEX;
+		}
+		memmove(pData + pos * this->fileHeader.entrySize, 
+			pData + (pos + 1) * this->fileHeader.entrySize,
+			(size_t)(pageHeader->numIndex - pos - 1) * this->fileHeader.entrySize);
+		pageHeader->numIndex --;
+		this->bSonSplited = (pageHeader->numIndex == 0);
+		if (!this->bSonSplited && pos == pageHeader->numIndex) {
+			this->bMaxModified = true;
+			char *dest = pData + (pageHeader->numIndex - 1) * this->fileHeader.entrySize;
+			memcpy(this->Data, dest, this->fileHeader.attrLength);
+			this->DataRid = *(RID *)(dest + this->fileHeader.attrLength);
+			this->newSonPageNum = pageNum;
+		} else {
+			this->bMaxModified = false;
+		}
+	}
 	return 0;
 }
 
 RC IX_IndexHandle::DeleteEntry(void *pData, const RID &rid){
-	// TRY(IsValid());
-	// if (pData == NULL) {
-	// 	return IX_ERR_NULLENTRY;
-	// }
-	// if (this->Data == NULL) {
-	// 	this->Data = (char *)malloc(fileHeader.attrLength);
-	// }
-	// std::strcpy(this->Data, (char *)pData);
-	// this->DataRid = rid;
+	TRY(IsValid());
+	if (pData == NULL) {
+		return IX_ERR_NULLENTRY;
+	}
+	if (this->Data == NULL) {
+		this->Data = (char *)malloc(fileHeader.attrLength);
+	}
+	std::strcpy(this->Data, (char *)pData);
+	this->DataRid = rid;
 
-	// PF_PageHandle pageHandle;
+	PF_PageHandle pageHandle;
 
-	// TRY(this->fileHandle->GetThisPage(this->fileHeader.rootPage, pageHandle));
-	// TRY(Remove(pageHandle));
+	TRY(this->fileHandle->GetThisPage(this->fileHeader.rootPage, pageHandle));
+	TRY(Remove(pageHandle));
 	return 0;
 }
 
