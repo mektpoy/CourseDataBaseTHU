@@ -2,6 +2,7 @@
 #include "ix.h"
 #include "ix_internal.h"
 #include <iostream>
+#include <cmath>
 
 IX_IndexHandle::IX_IndexHandle(){
 	this->bFileOpen = false;
@@ -18,8 +19,19 @@ int IX_IndexHandle::Compare(char *str) {
 	std::memcpy(indexData, str, this->fileHeader.attrLength);
 	RID *rid = (RID *)(str + this->fileHeader.attrLength);
 	int ret;
-	if ((ret = strcmp(Data, indexData))){
-		return ret;
+	if (this->fileHeader.attrType == STRING) {
+		if ((ret = strcmp(Data, indexData))){
+			return ret;
+		}
+	} else if (this->fileHeader.attrType == FLOAT) {
+		double t = *(double *)this->Data - *(double *)indexData;
+		if (t < 0 && std::fabs(t) > 1e-9) return -1;
+		if (t > 0 && std::fabs(t) > 1e-9) return 1;
+	} else {
+		int A = *(int *)this->Data;
+		int B = *(int *)indexData;
+		if (A < B) return -1;
+		if (A > B) return 1;
 	}
 	if (DataRid.GetPage() == rid->GetPage()){
 		if (DataRid.GetSlot() <  rid->GetSlot()) return -1;
@@ -126,6 +138,13 @@ RC IX_IndexHandle::Insert(PF_PageHandle pageHandle) {
 		if (res == 1) break;
 	}
 
+	// modify max value
+	p = pData + (pageHeader->numIndex - 1) * this->fileHeader.entrySize;
+	if (pos == pageHeader->numIndex - 1 && Compare(p) == 1) {
+		memcpy(p, Data, this->fileHeader.attrLength);
+		memcpy(p + this->fileHeader.attrLength, &DataRid, sizeof(RID));
+	} 
+
 	if (pageHeader->nextPage == IX_PAGE_NOT_LEAF){
 		// NOT LEAF
 		PageNum *sonPageNum = (PageNum *)(pData + pos * this->fileHeader.entrySize
@@ -182,7 +201,14 @@ RC IX_IndexHandle::InsertEntry(void *pData, const RID &rid){
 		newPageHeader->numIndex = 2;
 		newPageData = newPageData + sizeof(IX_PageHeader);
 		TRY(SetEntry(newPageData, 0, Data, DataRid, this->fileHeader.rootPage));
-		TRY(SetEntry(newPageData, 1, Data, DataRid, newSonPageNum));
+		TRY(this->fileHandle->GetThisPage(newSonPageNum, pageHandle));
+		char *pageData;
+		TRY(pageHandle.GetData(pageData));
+		IX_PageHeader *pageHeader = (IX_PageHeader *)pageData;
+		pageData = pageData + sizeof(IX_PageHeader);
+		char *dest = pageData + (pageHeader->numIndex - 1) * this->fileHeader.entrySize;
+		RID rid = *(RID *)(dest + this->fileHeader.attrLength);
+		TRY(SetEntry(newPageData, 1, dest, rid, newSonPageNum));
 		this->bHeaderDirty = true;
 		this->fileHeader.rootPage = newPageNum;
 		TRY(this->fileHandle->UnpinPage(newPageNum));
@@ -219,6 +245,7 @@ RC IX_IndexHandle::Remove(PF_PageHandle pageHandle) {
 		if (rc == IX_WAR_NOSUCHINDEX || rc < 0) {
 			return rc;
 		}
+		// son has been deleted
 		if (bSonSplited) {
 			memmove(pData + pos * this->fileHeader.entrySize, 
 				pData + (pos + 1) * this->fileHeader.entrySize,
@@ -235,7 +262,13 @@ RC IX_IndexHandle::Remove(PF_PageHandle pageHandle) {
 				this->bMaxModified = false;
 			}
 		} else {
-
+			if (this->bMaxModified) {
+				memcpy(pData + pos * this->fileHeader.entrySize,
+					this->Data, this->fileHeader.attrLength);
+				memcpy(pData + pos * this->fileHeader.entrySize + this->fileHeader.attrLength,
+					&this->DataRid, sizeof(DataRid));
+				this->bMaxModified = (pos == pageHeader->numIndex - 1);
+			}
 		}
 	} else {
 		// LEAF

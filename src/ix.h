@@ -30,6 +30,7 @@ struct IX_PageHeader {
 //
 class IX_IndexHandle {
 	friend class IX_Manager;
+	friend class IX_IndexScan;
 public:
 	IX_IndexHandle  ();
 	~IX_IndexHandle ();
@@ -70,6 +71,13 @@ public:
 						void *value, ClientHint pinHint = NO_HINT);           
     RC GetNextEntry (RID &rid);
     RC CloseScan 	();
+    RC Compare		(char *str);
+    const IX_IndexHandle *indexHandle;
+    PageNum currentPage;
+    int currentSlot;
+    CompOp compOp;
+    void *value;
+    bool getLeft;
 };
 
 //
@@ -99,6 +107,7 @@ void IX_PrintError(RC rc);
 
 #define IX_ERR_FILENOTOPEN 	(START_IX_ERR - 0)
 #define IX_ERR_NULLENTRY	(START_IX_ERR - 1)
+#define IX_ERR_NEOP 		(START_IX_ERR - 2)
 
 #endif
 

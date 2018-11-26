@@ -114,7 +114,6 @@ public:
     int attrLength;
     int attrOffset;
     CompOp compOp;
-    void *value;
     int valueINT;
     double valueFLOAT;
     char *valueSTRING;

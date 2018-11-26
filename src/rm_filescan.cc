@@ -8,7 +8,6 @@ RM_FileScan::RM_FileScan()
 {
     this->fileHandle = NULL;
     this->current = RID(0, 0);
-    this->value = NULL;
 }
 
 RM_FileScan::~RM_FileScan()
@@ -41,7 +40,6 @@ RC RM_FileScan::OpenScan  (const 	RM_FileHandle &fileHandle,
 			memcpy(this->valueSTRING, value, attrLength);
 		}
 	}
-	this->value = value;
 	return 0;
 }
 
