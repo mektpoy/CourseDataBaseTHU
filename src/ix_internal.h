@@ -7,7 +7,7 @@
 #ifndef IX_INTERNAL_H
 #define IX_INTERNAL_H
 
-#define IX_PAGE_LIST_END  -1       // end of list of free pages
-#define IX_PAGE_USED      -2       // page is being used
+#define IX_PAGE_NOT_LEAF -1
+#define IX_PAGE_LIST_END -2
 
 #endif

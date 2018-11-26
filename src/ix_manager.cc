@@ -28,12 +28,30 @@ RC IX_Manager::CreateIndex (const char *fileName, int indexNo,
 	TRY(pageHandle.GetData(pageData));
 
 	auto p = (IX_FileHeader *)pageData;
-	p->firstFreePage = IX_PAGE_LIST_END;
 	p->attrType = attrType;
 	p->attrLength = attrLength;
-	p->entrySize = attrLength + sizeof(RID);
+	p->entrySize = attrLength + sizeof(RID) + sizeof(PageNum);
+
+//  num * (p->entrySize) + [(num + 7) / 8] <= (PF_PAGE_SIZE - sizeof(IX_PageHeader) + 1)
+//  IX_HEADER_SIZE = sizeof(IX_PageHeader) + [(num + 7) / 8]
+//     int num = (PF_PAGE_SIZE - sizeof(IX_PageHeader) + 1) / (p->entrySize + 1.0 / 8.0);
+//     while (num * p->entrySize + ((num + 7) / 8) > PF_PAGE_SIZE - (int)sizeof(IX_PageHeader) + 1)
+//         num --;
+//     p->entryNumPerPage = num;
 	p->entryNumPerPage = (PF_PAGE_SIZE - sizeof(IX_PageHeader)) / p->entrySize;
 
+	PageNum rootPageNum;
+	PF_PageHandle rootPageHandle;
+	TRY(fileHandle.AllocatePage(rootPageHandle));
+	TRY(rootPageHandle.GetPageNum(rootPageNum));
+	char *rootPageData;
+	TRY(rootPageHandle.GetData(rootPageData));
+	IX_PageHeader *rootPageHeader = (IX_PageHeader *)rootPageData;
+	rootPageHeader->numIndex = 0;
+	rootPageHeader->nextPage = IX_PAGE_LIST_END;
+	TRY(fileHandle.UnpinPage(rootPageNum));
+
+	p->rootPage = rootPageNum;
 	PageNum pageNum;
 	TRY(pageHandle.GetPageNum(pageNum));
 	TRY(fileHandle.UnpinPage(pageNum));
@@ -64,8 +82,8 @@ RC IX_Manager::OpenIndex (const char *fileName, int indexNo,
     TRY(pageHandle.GetData(pData));
 
     indexHandle.bFileOpen = true;
-    indexHandle.bHeaderDirty = false;
     indexHandle.fileHeader = *(IX_FileHeader *)pData;
+    indexHandle.indexData = (char *)malloc(indexHandle.fileHeader.attrLength);
 
     PageNum pageNum;
     TRY(pageHandle.GetPageNum(pageNum));
@@ -74,15 +92,20 @@ RC IX_Manager::OpenIndex (const char *fileName, int indexNo,
 }
 
 RC IX_Manager::CloseIndex (IX_IndexHandle &indexHandle) {
-	PF_PageHandle pageHandle;
-    if (indexHandle.bHeaderDirty) {
-        char *pData;
-        TRY(indexHandle.fileHandle->GetFirstPage(pageHandle));
-        TRY(pageHandle.GetData(pData));
-        memcpy(pData, &indexHandle.fileHeader, sizeof(IX_FileHeader));
-    }
+	if (indexHandle.bHeaderDirty){
+    	PF_PageHandle pageHandle;
+    	PageNum pageNum;
+		char *pData;
+		TRY(indexHandle.fileHandle->GetFirstPage(pageHandle));
+		TRY(pageHandle.GetPageNum(pageNum));
+		TRY(pageHandle.GetData(pData));
+		memcpy(pData, &indexHandle.fileHeader, sizeof(IX_FileHeader));
+		TRY(indexHandle.fileHandle->UnpinPage(pageNum));
+	}
     pfm->CloseFile(*(indexHandle.fileHandle));
-
+    free(indexHandle.indexData);
+    free(indexHandle.Data);
     indexHandle.fileHandle = NULL;
+    indexHandle.bFileOpen = false;
 	return 0;
 }

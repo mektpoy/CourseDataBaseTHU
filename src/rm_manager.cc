@@ -73,15 +73,16 @@ RC RM_Manager::OpenFile(const char *fileName, RM_FileHandle &fileHandle) {
 }
 
 RC RM_Manager::CloseFile(RM_FileHandle &fileHandle) {
-    PF_PageHandle pageHandle;
     if (fileHandle.bHeaderDirty) {
+        PF_PageHandle pageHandle;
         char *pData;
         TRY(fileHandle.pf_FileHandle->GetFirstPage(pageHandle));
         TRY(pageHandle.GetData(pData));
         memcpy(pData, &fileHandle.rm_FileHeader, sizeof(RM_FileHeader));
     }
     pfm->CloseFile(*(fileHandle.pf_FileHandle));
-
+    fileHandle.bFileOpen = false;
+    fileHandle.bHeaderDirty = false;
     fileHandle.pf_FileHandle = NULL;
     return 0;
 }

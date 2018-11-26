@@ -13,7 +13,7 @@
 #include "pf.h"
 
 struct IX_FileHeader {
-    int 		firstFreePage;
+    int 		rootPage;
     AttrType 	attrType;
     int 		attrLength;
     int			entrySize;
@@ -22,8 +22,7 @@ struct IX_FileHeader {
 
 struct IX_PageHeader {
     int nextPage;
-    int numRecord;
-    unsigned char bitmask[1];
+    int numIndex;
 };
 
 //
@@ -32,16 +31,31 @@ struct IX_PageHeader {
 class IX_IndexHandle {
 	friend class IX_Manager;
 public:
-	IX_IndexHandle  ();                             
-	~IX_IndexHandle ();                            
-	RC InsertEntry 	(void *pData, const RID &rid);  
-	RC DeleteEntry 	(void *pData, const RID &rid);  
-	RC ForcePages 	();    
+	IX_IndexHandle  ();
+	~IX_IndexHandle ();
+	RC InsertEntry 	(void *pData, const RID &rid);
+	RC DeleteEntry 	(void *pData, const RID &rid);
+	RC ForcePages 	();
+	RC IsValid		()const;
+	RC Insert 		(PF_PageHandle pageHandle);
+	RC Remove		(PF_PageHandle pageHandle);
+	RC GetEntry 	(const char *pData, const int pos, 
+		char *&data, RID *&rid, PageNum *&pageNum) const;
+	RC SetEntry		(char *pData, const int pos, 
+		const char *data, const RID &rid, PageNum pageNum);
+	RC SplitAndInsert(PF_PageHandle &pageHandle, IX_PageHeader *pageHeader,
+		char *pData, int pos, bool isLeaf);
+	int Compare	(char *str);
 private:
 	PF_FileHandle *fileHandle;
 	bool bFileOpen;
+	char *Data;
+	RID DataRid;
+	PageNum newSonPageNum;
+	IX_FileHeader fileHeader;
+	char *indexData;
+	bool bSonSplited;
 	bool bHeaderDirty;
-	IX_FileHeader fileHeader;                         
 };
 
 //
@@ -78,6 +92,11 @@ private:
 // Print-error function
 //
 void IX_PrintError(RC rc);
+
+#define IX_WAR_DUPLICATEDIX (START_IX_WARN + 0)
+
+#define IX_ERR_FILENOTOPEN 	(START_IX_ERR - 0)
+#define IX_ERR_NULLENTRY	(START_IX_ERR - 1)
 
 #endif
 
