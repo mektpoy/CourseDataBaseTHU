@@ -72,12 +72,15 @@ public:
     RC GetNextEntry (RID &rid);
     RC CloseScan 	();
     RC Compare		(char *str);
+    RC Check 		(char *str);
     const IX_IndexHandle *indexHandle;
     PageNum currentPage;
     int currentSlot;
     CompOp compOp;
     void *value;
     bool getLeft;
+    char *pDataBuf;
+    char *indexData;
 };
 
 //
@@ -104,6 +107,7 @@ void IX_PrintError(RC rc);
 
 #define IX_WAR_DUPLICATEDIX (START_IX_WARN + 0)
 #define IX_WAR_NOSUCHINDEX	(START_IX_WARN + 1)
+#define IX_EOF 				(START_IX_WARN + 2)
 
 #define IX_ERR_FILENOTOPEN 	(START_IX_ERR - 0)
 #define IX_ERR_NULLENTRY	(START_IX_ERR - 1)
