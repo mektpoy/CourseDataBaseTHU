@@ -14,8 +14,6 @@ IX_IndexHandle::IX_IndexHandle(){
 }
 
 IX_IndexHandle::~IX_IndexHandle(){
-	free(this->Data);
-	free(this->indexData);
 }
 
 int IX_IndexHandle::Compare(char *str) {
@@ -71,10 +69,11 @@ RC IX_IndexHandle::SplitAndInsert(PF_PageHandle &pageHandle, IX_PageHeader *page
 	char *pData, int pos, bool isLeaf) {
 	if (pageHeader->numIndex == this->fileHeader.entryNumPerPage){
 		PF_PageHandle newPageHandle;
-		this->fileHandle->AllocatePage(newPageHandle);
+		TRY(this->fileHandle->AllocatePage(newPageHandle));
 		PageNum newPageNum;
 		char *newPageData;
 		TRY(newPageHandle.GetPageNum(newPageNum));
+		TRY(this->fileHandle->MarkDirty(newPageNum));
 		TRY(newPageHandle.GetData(newPageData));
 		IX_PageHeader *newPageHeader = (IX_PageHeader *)newPageData;
 		newPageData = newPageData + sizeof(IX_PageHeader);
@@ -113,48 +112,54 @@ RC IX_IndexHandle::SplitAndInsert(PF_PageHandle &pageHandle, IX_PageHeader *page
 		memmove(pData + (pos + 1) * this->fileHeader.entrySize, 
 			pData + pos * this->fileHeader.entrySize,
 			(size_t)(pageHeader->numIndex - pos) * this->fileHeader.entrySize);
+		//std::cerr << "pos = " << pos << " num = " << *(int *)(this->Data) << "\n";
+		//std::cerr << "RID = (" << this->DataRid.GetPage() << "," << this->DataRid.GetSlot() <<
+		//	")\n";
 		TRY(SetEntry(pData, pos, this->Data, this->DataRid, this->newSonPageNum));
 		pageHeader->numIndex ++;
 		this->bSonSplited = false;
 		this->newSonPageNum = 0;
 	}
-	PageNum pageNum;
-	pageHandle.GetPageNum(pageNum);
-	TRY(this->fileHandle->UnpinPage(pageNum));
 	return 0;
 }
 
 RC IX_IndexHandle::Insert(PageNum pageNum) {
 	PF_PageHandle pageHandle;
-	std::cerr << "pagenum = " << pageNum << "\n";
+	//std::cerr << "pagenum = " << pageNum << "\n";
 	IXTRY(this->fileHandle->GetThisPage(pageNum, pageHandle), pageNum);
-	std::cerr << "pagenum = " << pageNum << "\n";
+	IXTRY(this->fileHandle->MarkDirty(pageNum), pageNum);
+	//std::cerr << "pagenum = " << pageNum << "\n";
 	char *pData;
 	IXTRY(pageHandle.GetData(pData), pageNum);
 	IX_PageHeader *pageHeader = (IX_PageHeader *)pData;
 
+	//std::cerr << "pData = " << (void *)pData << "\n";
 	pData = pData + sizeof(IX_PageHeader);
-	int pos = pageHeader->numIndex - 1;
-	std::cerr << "numIndex = " << pageHeader->numIndex << "\n";
+	//std::cerr << "pData = " << (void *)pData << "\n";
+	int pos = pageHeader->numIndex;
+	//std::cerr << "nextPage = " << pageHeader->nextPage << "\n";
+	//std::cerr << "numIndex = " << pageHeader->numIndex << "\n";
 	char *p = pData;
 	for (int i = 0; i < pageHeader->numIndex; i ++, p = p + this->fileHeader.entrySize) {
 		int res = Compare(p);
-		if (res == -1) pos = i;
+		if (res == -1) {
+			pos = i;
+			break;
+		}
 		if (res == 0) {
 			this->fileHandle->UnpinPage(pageNum);
 			return IX_WAR_DUPLICATEDIX;
 		}
-		if (res == 1) break;
 	}
-	std::cerr << "pos = " << pos << "\n";
 
 	// NOT LEAF
 	if (pageHeader->nextPage == IX_PAGE_NOT_LEAF){
 		// modify max value
-		if (pos == pageHeader->numIndex - 1 && Compare(p) == 1) {
+		if (pos == pageHeader->numIndex) {
 			p = pData + (pageHeader->numIndex - 1) * this->fileHeader.entrySize;
 			memcpy(p, Data, this->fileHeader.attrLength);
 			memcpy(p + this->fileHeader.attrLength, &DataRid, sizeof(RID));
+			pos --;
 		} 
 		PageNum sonPageNum = *(PageNum *)(pData + pos * this->fileHeader.entrySize
 			+ this->fileHeader.attrLength + sizeof(RID));
@@ -163,21 +168,19 @@ RC IX_IndexHandle::Insert(PageNum pageNum) {
 			this->fileHandle->UnpinPage(pageNum);
 			return rc;
 		}
-		pos = pageHeader->numIndex - 1;
+		pos = pageHeader->numIndex;
 		p = pData;
 		for (int i = 0; i < pageHeader->numIndex; i ++, p = p + this->fileHeader.entrySize) {
 			int res = Compare(p);
-			if (res == -1) pos = i;
-			if (res == 0) {
-				this->fileHandle->UnpinPage(pageNum);
-				return IX_WAR_DUPLICATEDIX;
-			} 
-			if (res == 1) break;
+			if (res == -1) {
+				pos = i;
+				break;
+			}
 		}
-		IXTRY(SplitAndInsert(pageHandle, pageHeader, pData, pos + 1, false), pageNum);
+		IXTRY(SplitAndInsert(pageHandle, pageHeader, pData, pos, false), pageNum);
 	} else {
 		// LEAF
-		IXTRY(SplitAndInsert(pageHandle, pageHeader, pData, pos + 1, true), pageNum);
+		IXTRY(SplitAndInsert(pageHandle, pageHeader, pData, pos, true), pageNum);
 	}
 	this->fileHandle->UnpinPage(pageNum);
 	return 0;
@@ -206,6 +209,7 @@ RC IX_IndexHandle::InsertEntry(void *pData, const RID &rid){
 		char *newPageData;
 		TRY(newPageHandle.GetPageNum(newPageNum));
 		TRY(newPageHandle.GetData(newPageData));
+		TRY(this->fileHandle->MarkDirty(newPageNum));
 		IX_PageHeader *newPageHeader = (IX_PageHeader *)newPageData;
 		newPageHeader->nextPage = IX_PAGE_NOT_LEAF;
 		newPageHeader->numIndex = 2;

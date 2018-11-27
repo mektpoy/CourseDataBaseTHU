@@ -420,6 +420,7 @@ RC VerifyIntIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists)
    printf("Verifying index contents\n");
 
    for (i = nStart; i < nStart + nEntries; i++) {
+      cerr << i << endl;
       int value = values[i] + 1;
 
       if ((rc = scan.OpenScan(ih, EQ_OP, &value))) {

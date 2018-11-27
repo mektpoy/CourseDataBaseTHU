@@ -20,18 +20,22 @@ RC IX_Manager::CreateIndex (const char *fileName, int indexNo,
 	TRY(pfm->CreateFile(FileName));
 
 	PF_FileHandle fileHandle;
-	PF_PageHandle pageHandle;
+	TRY(pfm->OpenFile(FileName, fileHandle));
 
+	PF_PageHandle pageHandle;
+	PageNum pageNum;
 	char *pageData;
 
-	TRY(pfm->OpenFile(FileName, fileHandle));
 	TRY(fileHandle.AllocatePage(pageHandle));
+	TRY(pageHandle.GetPageNum(pageNum));
 	TRY(pageHandle.GetData(pageData));
+	TRY(fileHandle.MarkDirty(pageNum));
 
 	auto p = (IX_FileHeader *)pageData;
 	p->attrType = attrType;
 	p->attrLength = attrLength;
 	p->entrySize = attrLength + sizeof(RID) + sizeof(PageNum);
+	p->entryNumPerPage = (PF_PAGE_SIZE - sizeof(IX_PageHeader)) / p->entrySize;
 
 //  num * (p->entrySize) + [(num + 7) / 8] <= (PF_PAGE_SIZE - sizeof(IX_PageHeader) + 1)
 //  IX_HEADER_SIZE = sizeof(IX_PageHeader) + [(num + 7) / 8]
@@ -39,22 +43,22 @@ RC IX_Manager::CreateIndex (const char *fileName, int indexNo,
 //     while (num * p->entrySize + ((num + 7) / 8) > PF_PAGE_SIZE - (int)sizeof(IX_PageHeader) + 1)
 //         num --;
 //     p->entryNumPerPage = num;
-	p->entryNumPerPage = (PF_PAGE_SIZE - sizeof(IX_PageHeader)) / p->entrySize;
 
 	PageNum rootPageNum;
 	PF_PageHandle rootPageHandle;
+	char *rootPageData;
+
 	TRY(fileHandle.AllocatePage(rootPageHandle));
 	TRY(rootPageHandle.GetPageNum(rootPageNum));
-	char *rootPageData;
 	TRY(rootPageHandle.GetData(rootPageData));
-	IX_PageHeader *rootPageHeader = (IX_PageHeader *)rootPageData;
+	TRY(fileHandle.MarkDirty(rootPageNum));
+
+	auto rootPageHeader = (IX_PageHeader *)rootPageData;
 	rootPageHeader->numIndex = 0;
 	rootPageHeader->nextPage = IX_PAGE_LIST_END;
+	p->rootPage = rootPageNum;
 	TRY(fileHandle.UnpinPage(rootPageNum));
 
-	p->rootPage = rootPageNum;
-	PageNum pageNum;
-	TRY(pageHandle.GetPageNum(pageNum));
 	TRY(fileHandle.UnpinPage(pageNum));
 	TRY(pfm->CloseFile(fileHandle));
 	return 0;
@@ -72,6 +76,7 @@ RC IX_Manager::OpenIndex (const char *fileName, int indexNo,
 	char FileName[20];
 	memset(FileName, 0, sizeof(FileName));
 	sprintf(FileName, "%s.%d", fileName, indexNo);
+
 	indexHandle.fileHandle = new PF_FileHandle();
     PF_PageHandle pageHandle;
     char *pData;
@@ -103,9 +108,15 @@ RC IX_Manager::CloseIndex (IX_IndexHandle &indexHandle) {
 		memcpy(pData, &indexHandle.fileHeader, sizeof(IX_FileHeader));
 		TRY(indexHandle.fileHandle->UnpinPage(pageNum));
 	}
-    pfm->CloseFile(*(indexHandle.fileHandle));
-	// free(indexHandle.indexData);
-	// free(indexHandle.Data);
+    PF_PageHandle pageHandle;
+    indexHandle.fileHandle->GetThisPage(1, pageHandle);
+    char *pData;
+    pageHandle.GetData(pData);
+    std::cerr << "numIndex = " << ((IX_PageHeader *)pData)->numIndex << "\n";
+    indexHandle.fileHandle->UnpinPage(1);
+    TRY(pfm->CloseFile(*(indexHandle.fileHandle)));
+	free(indexHandle.indexData);
+	free(indexHandle.Data);
     indexHandle.fileHandle = NULL;
     indexHandle.bFileOpen = false;
 	return 0;

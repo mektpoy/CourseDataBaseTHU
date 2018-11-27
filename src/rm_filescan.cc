@@ -40,6 +40,7 @@ RC RM_FileScan::OpenScan  (const 	RM_FileHandle &fileHandle,
 			memcpy(this->valueSTRING, value, attrLength);
 		}
 	}
+    this->current = RID(0, 0);
 	return 0;
 }
 
