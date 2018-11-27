@@ -12,7 +12,7 @@ IX_IndexScan::~IX_IndexScan(){
 
 }
 
-RC Compare (char *str) {
+RC IX_IndexScan::Compare (char *str) {
 	return 0;
 }
 

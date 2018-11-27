@@ -24,3 +24,7 @@ src/rm_test\.dSYM/Contents/Resources/DWARF/rm_test
 src/testrel
 
 src/rm_test
+
+src/ix_test\.dSYM/Contents/Resources/DWARF/ix_test
+
+src/ix_test
