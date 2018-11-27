@@ -38,7 +38,7 @@ public:
 	RC DeleteEntry 	(void *pData, const RID &rid);
 	RC ForcePages 	();
 	RC IsValid		()const;
-	RC Insert 		(PF_PageHandle pageHandle);
+	RC Insert 		(PageNum pageNum);
 	RC Remove		(PF_PageHandle pageHandle);
 	RC GetEntry 	(const char *pData, const int pos, 
 		char *&data, RID *&rid, PageNum *&pageNum) const;
@@ -50,13 +50,13 @@ public:
 private:
 	PF_FileHandle *fileHandle;
 	bool bFileOpen;
+	bool bHeaderDirty;
+	IX_FileHeader fileHeader;
 	char *Data;
+	char *indexData;
 	RID DataRid;
 	PageNum newSonPageNum;
-	IX_FileHeader fileHeader;
-	char *indexData;
 	bool bSonSplited;
-	bool bHeaderDirty;
 	bool bMaxModified;
 };
 

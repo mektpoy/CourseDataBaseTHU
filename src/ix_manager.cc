@@ -64,7 +64,6 @@ RC IX_Manager::DestroyIndex (const char *fileName, int indexNo) {
 	char FileName[20];
 	memset(FileName, 0, sizeof(FileName));
 	sprintf(FileName, "%s.%d", fileName, indexNo);
-	TRY(pfm->CreateFile(FileName));
 	return pfm->DestroyFile(FileName);
 }
 
@@ -73,7 +72,6 @@ RC IX_Manager::OpenIndex (const char *fileName, int indexNo,
 	char FileName[20];
 	memset(FileName, 0, sizeof(FileName));
 	sprintf(FileName, "%s.%d", fileName, indexNo);
-	TRY(pfm->CreateFile(FileName));
 	indexHandle.fileHandle = new PF_FileHandle();
     PF_PageHandle pageHandle;
     char *pData;
@@ -83,7 +81,9 @@ RC IX_Manager::OpenIndex (const char *fileName, int indexNo,
     TRY(pageHandle.GetData(pData));
 
     indexHandle.bFileOpen = true;
+    indexHandle.bHeaderDirty = false;
     indexHandle.fileHeader = *(IX_FileHeader *)pData;
+	indexHandle.Data = (char *)malloc(indexHandle.fileHeader.attrLength);
     indexHandle.indexData = (char *)malloc(indexHandle.fileHeader.attrLength);
 
     PageNum pageNum;
@@ -104,8 +104,8 @@ RC IX_Manager::CloseIndex (IX_IndexHandle &indexHandle) {
 		TRY(indexHandle.fileHandle->UnpinPage(pageNum));
 	}
     pfm->CloseFile(*(indexHandle.fileHandle));
-    free(indexHandle.indexData);
-    free(indexHandle.Data);
+	// free(indexHandle.indexData);
+	// free(indexHandle.Data);
     indexHandle.fileHandle = NULL;
     indexHandle.bFileOpen = false;
 	return 0;

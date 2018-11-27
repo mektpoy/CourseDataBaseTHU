@@ -206,6 +206,7 @@ RC InsertIntEntries(IX_IndexHandle &ih, int nEntries)
    printf("             Adding %d int entries\n", nEntries);
    ran(nEntries);
    for(i = 0; i < nEntries; i++) {
+      cerr << i << "\n";
       value = values[i] + 1;
       RID rid(value, value*2);
       if ((rc = ih.InsertEntry((void *)&value, rid)))
@@ -551,6 +552,7 @@ RC VerifyFloatIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists)
 //
 RC Test1(void)
 {
+   cerr << "ok 1\n";
    RC rc;
    int index=0;
    IX_IndexHandle ih;

@@ -102,4 +102,13 @@ typedef char Boolean;
 		if (__rc < 0) return __rc; \
 	}
 
+#define IXTRY(_x, _y) \
+    if (int __rc = (_x)) { \
+        std::cout << "non-zero return code : " << __rc << std::endl; \
+        if (__rc < 0) { \
+            this->fileHandle->UnpinPage(_y); \
+            return __rc; \
+        }\
+    }
+
 #endif
