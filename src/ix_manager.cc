@@ -2,6 +2,7 @@
 #include "ix.h"
 #include "ix_internal.h"
 #include <iostream>
+#include <cstring>
 
 IX_Manager::IX_Manager (PF_Manager &pfm) {
 	this->pfm = &pfm;

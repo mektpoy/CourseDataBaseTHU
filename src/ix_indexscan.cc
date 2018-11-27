@@ -2,6 +2,7 @@
 #include "ix.h"
 #include "ix_internal.h"
 #include <iostream>
+#include <cstring>
 
 IX_IndexScan::IX_IndexScan(){
 

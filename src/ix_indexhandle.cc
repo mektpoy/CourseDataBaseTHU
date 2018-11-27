@@ -3,6 +3,7 @@
 #include "ix_internal.h"
 #include <iostream>
 #include <cmath>
+#include <cstring>
 
 IX_IndexHandle::IX_IndexHandle(){
 	this->bFileOpen = false;
