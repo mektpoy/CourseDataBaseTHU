@@ -77,3 +77,42 @@ IX阶段包含下述文件：
 对于Index中可能出现的值相同的元素，处理方法是，将RID也作为比较的第二关键字，这样可以保证比较Index的时候两两不同。
 
 对于B+树的中间节点，会储存子节点的（双关键字）最大值，并且储存子节点的页号。对于插入操作，当前节点若超过了可以容纳的长度则分裂，调用IX_IndexHandle::SplitAndInsert，首先将当前节点分裂，如果是叶子节点，顺便维护一下单向链表。对于删除操作，如果将当前节点删空了的话，返回的时候打个标记，回溯的时候将对应位置也做删除。
+
+#### SM
+
+SM阶段包含下述文件：
+	sm.h
+	sm_manager.cc
+
+在SM阶段,使用DataAttrInfo来记录属性的信息。
+	char     relName[MAXNAME+1];  
+	char     attrName[MAXNAME+1]; 
+	int      offset;              
+	AttrType attrType;            
+	int      attrLength;          
+	int      indexNo;             
+relName为该属性的表的名字
+attrName为该表的名字
+offset为偏移
+attrType为类的属性
+attrLength为这个类需要占的长度
+indexNo为所以的序号
+
+在SM阶段,使用DataRealInfo来记录表的信息。
+	int      recordSize;            
+	int      attrCount;            
+	int      numPages;              
+	int      numRecords;            
+	char     relName[MAXNAME+1];  
+
+recordSize为一个record的大小
+attrCount为属性的个数
+numPages为该表所占Pages个数
+numRecords为该表所占Records个数
+relName[MAXNAME+1]为数据库的名称
+
+在SM阶段我们主要使用IX和RM提供的接口，来实现数据库需要实现的种种操作。
+在增删改数据，以及创建删除表的时候要注意对DataAttrInfo和DataRealInfo的维护。
+
+
+
